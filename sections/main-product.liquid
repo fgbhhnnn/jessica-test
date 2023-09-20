@@ -90,9 +90,9 @@
       {%- assign featured_media = product.selected_or_first_available_variant.featured_media | default: product.featured_media -%}
 
       {%- if template.suffix == 'quick-buy-drawer' -%}
-        <img loading="lazy" sizes="114px" class="quick-buy-product__image" {% render 'image-attributes', image: featured_media, sizes: '114,228,342' %}>
+        {{- featured_media | image_url: width: featured_media.width | image_tag: loading: 'lazy', sizes: '114px', widths: '114,228,342', class: 'quick-buy-product__image' -}}
       {%- else -%}
-        <img loading="lazy" sizes="65px" class="quick-buy-product__image" {% render 'image-attributes', image: featured_media, sizes: '65,130,195' %}>
+        {{- featured_media | image_url: width: featured_media.width | image_tag: loading: 'lazy', sizes: '65px', widths: '65,130,195', class: 'quick-buy-product__image' -}}
       {%- endif -%}
 
       <div class="quick-buy-product__info {% if template.suffix == 'quick-buy-popover' %}text--small{% endif %}">
@@ -164,6 +164,18 @@
               <a href="{{ product.url }}" class="link text--subdued">{{ 'product.general.view_details' | t }}</a>
             {%- endif -%}
           </div>
+
+          {%- if cart.taxes_included or shop.shipping_policy.body != blank -%}
+            <p class="product-meta__taxes-included text--small">
+              {%- if cart.taxes_included -%}
+                {{ 'product.general.include_taxes' | t }}
+              {%- endif -%}
+
+              {%- if shop.shipping_policy.body != blank -%}
+                {{ 'product.general.shipping_policy_html' | t: link: shop.shipping_policy.url }}
+              {%- endif -%}
+            </p>
+          {%- endif -%}
         </product-meta>
       </div>
     </div>
@@ -291,6 +303,13 @@
           "label": "Show dynamic checkout button",
           "info": "Each customer will see their preferred payment method from those available on your store, such as PayPal or Apple Pay. [Learn more](https://help.shopify.com/manual/using-themes/change-the-layout/dynamic-checkout)",
           "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_gift_card_recipient",
+          "label": "Show recipient information form for gift card products",
+          "info": "Gift card products can optionally be sent directly to a recipient along with a personal message. [Learn more](https://help.shopify.com/manual/online-store/themes/customizing-themes/add-gift-card-recipient-fields)",
+          "default": false
         },
         {
           "type": "color",

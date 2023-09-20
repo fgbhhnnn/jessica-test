@@ -44,7 +44,8 @@
                 {%- capture image_link_setting -%}image_{{ i }}_link{%- endcapture -%}
 
                 {%- capture image_push -%}
-                  <img class="mobile-nav__image" loading="lazy" sizes="270px" {% render 'image-attributes', image: mega_menu_block.settings[image_setting], sizes: '270,540,810' %}>
+                  {%- assign menu_image = mega_menu_block.settings[image_setting] -%}
+                  {{- menu_image | image_url: width: menu_image.width | image_tag: loading: 'lazy', sizes: '270px', sizes: '270,540,810', class: 'mobile-nav__image' -}}
 
                   {%- if mega_menu_block.settings[image_heading_setting] != '' -%}
                     <p class="mobile-nav__image-heading heading heading--xsmall">{{ mega_menu_block.settings[image_heading_setting] }}</p>
@@ -124,11 +125,11 @@
     {%- assign locale_selector = true -%}
   {%- endif -%}
 
-  {%- if section.settings.show_currency_selector and shop.enabled_currencies.size > 1 -%}
-    {%- assign currency_selector = true -%}
+  {%- if section.settings.show_country_selector and localization.available_countries.size > 1 -%}
+    {%- assign country_selector = true -%}
   {%- endif -%}
 
-  {%- if shop.customer_accounts_enabled or locale_selector or currency_selector -%}
+  {%- if shop.customer_accounts_enabled or locale_selector or country_selector -%}
     <div class="drawer__footer drawer__footer--tight drawer__footer--bordered">
       <div class="mobile-nav__footer">
         {%- if shop.customer_accounts_enabled -%}
@@ -138,15 +139,15 @@
           </a>
         {%- endif -%}
 
-        {%- if locale_selector or currency_selector -%}
+        {%- if locale_selector or country_selector -%}
           {%- form 'localization', id: 'header-sidebar-localization-form', class: 'header__cross-border' -%}
-            {%- if currency_selector -%}
+            {%- if country_selector -%}
               <div class="popover-container">
-                <input type="hidden" name="currency_code" value="{{ form.current_currency.iso_code }}">
-                <span class="visually-hidden">{{ 'header.general.currency' | t }}</span>
+                <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}">
+                <span class="visually-hidden">{{ 'header.general.country' | t }}</span>
 
                 <button type="button" is="toggle-button" class="popover-button text--xsmall tap-area" aria-expanded="false" aria-controls="header-sidebar-localization-form-currency">
-                  {{- form.current_currency.iso_code }} {% if form.current_currency.symbol %}{{ form.current_currency.symbol -}}{%- endif -%}
+                  {{- localization.country.name }} ({{ localization.country.currency.iso_code }} {% if localization.country.currency.symbol %}{{ localization.country.currency.symbol }}{%- endif -%})
                   {%- render 'icon' with 'chevron', width: 9, height: 6, inline: true -%}
                 </button>
 
@@ -154,7 +155,7 @@
                   <span class="popover__overlay"></span>
 
                   <header class="popover__header">
-                    <span class="popover__title heading h6">{{- 'header.general.currency' | t -}}</span>
+                    <span class="popover__title heading h6">{{- 'header.general.country' | t -}}</span>
 
                     <button type="button" class="popover__close-button tap-area tap-area--large" data-action="close" title="{{ 'general.accessibility.close' | t | escape }}">
                       {%- render 'icon' with 'close' -%}
@@ -163,10 +164,10 @@
 
                   <div class="popover__content">
                     <div class="popover__choice-list">
-                      {%- for currency in form.available_currencies -%}
-                        <button type="submit" name="currency_code" value="{{ currency.iso_code }}" class="popover__choice-item">
-                          <span class="popover__choice-label" {% if currency.iso_code == form.current_currency.iso_code %}aria-current="true"{% endif %}>
-                            {{ currency.iso_code }} {% if currency.symbol %}{{ currency.symbol }}{% endif %}
+                      {%- for country in localization.available_countries -%}
+                        <button type="submit" name="country_code" value="{{ country.iso_code }}" class="popover__choice-item">
+                          <span class="popover__choice-label" {% if country.iso_code == localization.country.iso_code %}aria-current="true"{% endif %}>
+                            {{- country.name }} ({{ country.currency.iso_code }} {% if country.currency.symbol %}{{ country.currency.symbol }}{%- endif -%})
                           </span>
                         </button>
                       {%- endfor -%}

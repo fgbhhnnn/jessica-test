@@ -48,7 +48,8 @@
             <native-carousel-item {% unless forloop.first %}hidden{% endunless %} id="block-{{ section.id }}-{{ block.id }}" class="text-with-icons__item" {{ block.shopify_attributes }}>
               <div class="text-with-icons__icon-wrapper">
                 {%- if block.settings.custom_icon != blank -%}
-                  <img class="text-with-icons__custom-icon" src="{{ block.settings.custom_icon | img_url: '48x' }}" alt="{{ block.settings.custom_icon.alt | escape }}">
+                  {% capture custom_icon_width %}{{ block.settings.custom_icon_width | times: 2 }}x{% endcapture %}
+                  <img class="text-with-icons__custom-icon" style="max-width: {{ block.settings.custom_icon_width }}px" width="{{ block.settings.custom_icon.width }}" height="{{ block.settings.custom_icon.height }}" src="{{ block.settings.custom_icon | img_url: custom_icon_width }}" alt="{{ block.settings.custom_icon.alt | escape }}">
                 {%- else -%}
                   {%- render 'icon' with block.settings.icon -%}
                 {%- endif -%}
@@ -87,6 +88,9 @@
 {
   "name": "Text with icons",
   "class": "shopify-section--text-with-icons",
+  "disabled_on": {
+    "groups": ["header", "custom.overlay"]
+  },
   "max_blocks": 4,
   "blocks": [
     {
@@ -255,7 +259,18 @@
           "type": "image_picker",
           "id": "custom_icon",
           "label": "Custom icon",
-          "info": "48 x 48px .png with transparency recommended"
+          "info": "100 x 100px .png with transparency recommended"
+        },
+        {
+          "type": "range",
+          "id": "custom_icon_width",
+          "min": 40,
+          "max": 200,
+          "step": 5,
+          "unit": "px",
+          "label": "Custom icon width",
+          "info": "Only impact custom icons",
+          "default": 50
         },
         {
           "type": "text",

@@ -65,8 +65,11 @@
             {%- capture logo_content -%}
               {%- if block.settings.logo != blank -%}
                 {%- assign logo_max_size = block.settings.logo.width | divided_by: 2 | at_most: 200 -%}
-                {%- capture logo_sizes -%}{{ logo_max_size }},{{ logo_max_size | times: 2 }}{%- endcapture -%}
-                <img loading="lazy" sizes="{{ logo_max_size }}px" style="width: {{ logo_max_size }}px" class="logo-list__image" {% render 'image-attributes', image: block.settings.logo, sizes: logo_sizes %}>
+                {%- capture logo_widths -%}{{ logo_max_size }},{{ logo_max_size | times: 2 }}{%- endcapture -%}
+                {%- capture logo_sizes -%}{{ logo_max_size }}px{%- endcapture -%}
+                {%- capture logo_style -%}width: {{ logo_max_size }}px{%- endcapture -%}
+
+                {{ block.settings.logo | image_url: width: block.settings.logo.width | image_tag: loading: 'lazy', style: logo_style, sizes: logo_sizes, widths: logo_widths, class: 'logo-list__image' }}
               {%- else -%}
                 {{- 'image' | placeholder_svg_tag: 'logo-list__image logo-list__image--placeholder' -}}
               {%- endif -%}
@@ -132,6 +135,9 @@
 {
   "name": "Logo list",
   "class": "shopify-section--logo-list",
+  "disabled_on": {
+    "groups": ["header", "custom.overlay"]
+  },
   "settings": [
     {
       "type": "checkbox",

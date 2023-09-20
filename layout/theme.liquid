@@ -56,14 +56,10 @@ NOTE TO DEVELOPERS: welcome to Focal theme! We hope that you will enjoy editing 
       {%- assign selected_media = product.selected_variant.featured_media | default: product.featured_media -%}
 
       <link rel="preload" as="fetch" href="{{ product.url }}.js" crossorigin>
-      <link rel="preload" as="image" imagesizes="(max-width: 999px) calc(100vw - 48px), 640px" imagesrcset="{% render 'image-attributes', image: selected_media, sizes: '400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800', sizes_only: true %}">
 
       {%- if product.media.size > 1 -%}
         <link rel="preload" as="script" href="{{ 'flickity.js' | asset_url }}">
       {%- endif -%}
-    {%- elsif request.page_type == 'collection' and collection.image -%}
-      <link rel="preload" as="image" media="(max-width: 740px)" imagesizes="100vw" imagesrcset="{% render 'image-attributes', image: collection.image, sizes: '400,500,600,700,800,900,1000', height_constraint: 600, crop: 'center', sizes_only: true %}">
-      <link rel="preload" as="image" media="(min-width: 741px)" imagesizes="100vw" imagesrcset="{% render 'image-attributes', image: collection.image, sizes: '600,700,800,1000,1200,1400,1600,1800,2000,2200,2400,2600', sizes_only: true %}">
     {%- endif -%}
 
     {% render 'social-meta-tags' %}
@@ -99,9 +95,8 @@ NOTE TO DEVELOPERS: welcome to Focal theme! We hope that you will enjoy editing 
     <loading-bar class="loading-bar"></loading-bar>
 
     {%- if request.page_type != 'gift_card' and request.page_type != 'password' -%}
-      {%- section 'announcement-bar' -%}
-      {%- section 'popup' -%}
-      {%- section 'header' -%}
+      {%- sections 'header-group' -%}
+      {%- sections 'overlay-group' -%}
 
       {%- unless settings.cart_type == 'page' or request.page_type == 'cart' -%}
         {%- section 'mini-cart' -%}
@@ -133,17 +128,17 @@ NOTE TO DEVELOPERS: welcome to Focal theme! We hope that you will enjoy editing 
 
         {%- assign is_toolbar_collapsed = false -%}
 
-        {%- if request.page_type == 'search' and search.results.first.object_type != 'product' -%}
+        {%- if request.page_type == 'search' and search.results.first.object_type != 'product' and search.results_count > 0 -%}
           {%- assign is_toolbar_collapsed = true -%}
         {%- endif -%}
 
         <div id="mobile-facet-toolbar" class="mobile-toolbar {% if is_toolbar_collapsed %}is-collapsed{% endif %} hidden-lap-and-up">
-          <button is="toggle-button" class="mobile-toolbar__item mobile-toolbar__item--filters {% if active_filters_count > 0 %}has-filters{% endif %}" aria-expanded="false" aria-controls="facet-filters">
+          <button is="toggle-button" class="mobile-toolbar__item mobile-toolbar__item--filters {% if active_filters_count > 0 %}has-filters{% endif %}" aria-expanded="false" aria-controls="facet-filters" style="display: none">
             {%- render 'icon' with 'filters' -%}
             <span class="mobile-toolbar__item-label">{{- 'collection.general.filters' | t -}}</span>
           </button>
 
-          <button is="toggle-button" class="mobile-toolbar__item mobile-toolbar__item--sort" aria-expanded="false" aria-controls="sort-by-popover">
+          <button is="toggle-button" class="mobile-toolbar__item mobile-toolbar__item--sort" aria-expanded="false" aria-controls="sort-by-popover" style="display: none">
             <span class="mobile-toolbar__item-label">{{- 'collection.general.sort_by' | t -}}</span>
             {%- render 'icon' with 'chevron' -%}
           </button>
@@ -151,15 +146,10 @@ NOTE TO DEVELOPERS: welcome to Focal theme! We hope that you will enjoy editing 
       {%- endif -%}
 
       {{ content_for_layout }}
-
-      {%- unless request.page_type == 'index' or request.page_type == 'password' or request.page_type == 'gift_card' -%}
-        {%- section 'static-text-with-icons' -%}
-        {%- section 'static-newsletter' -%}
-      {%- endunless -%}
     </div>
 
     {%- if request.page_type != 'gift_card' and request.page_type != 'password' -%}
-      {%- section 'footer' -%}
+      {%- sections 'footer-group' -%}
     {%- endif -%}
   </body>
 </html>

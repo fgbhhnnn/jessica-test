@@ -33,7 +33,7 @@
   }
 </style>
 
-<section class="section {% unless blends_with_background or is_boxed %}section--flush{% endunless %}">
+<section class="{% if section.settings.add_vertical_spacing %}section{% endif %} {% unless blends_with_background or is_boxed %}section--flush{% endunless %}">
   <div {% if is_boxed %}class="container"{% endif %}>
     <div class="section__color-wrapper {% if is_boxed %}section__color-wrapper--boxed{% endif %}">
       <div class="{% unless is_boxed %}container{% endunless %} {% unless blends_with_background %}vertical-breather{% endunless %}">
@@ -63,6 +63,9 @@
 {
   "name": "Custom HTML",
   "class": "shopify-section--custom-html",
+  "disabled_on": {
+    "groups": ["custom.overlay"]
+  },
   "settings": [
     {
       "type": "text",
@@ -81,6 +84,12 @@
       "id": "html",
       "label": "HTML",
       "default": "<p style=\"text-align: center\">Write or copy/paste HTML code</p>"
+    },
+    {
+      "type": "checkbox",
+      "id": "add_vertical_spacing",
+      "label": "Add vertical spacing",
+      "default": true
     },
     {
       "type": "select",

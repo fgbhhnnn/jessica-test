@@ -139,7 +139,7 @@
           {%- assign share_url = shop.url | append: product.url -%}
           {%- assign twitter_text = product.title | url_param_escape -%}
           {%- assign pinterest_description = product.description | strip_html | truncatewords: 15 | url_param_escape -%}
-          {%- assign pinterest_image = product.image | img_url: '800x' | prepend: 'https:' -%}
+          {%- assign pinterest_image = product.featured_image | img_url: '800x' | prepend: 'https:' -%}
 
           <button is="share-toggle-button" share-url="{{ share_url | escape }}" share-title="{{ product.title | escape }}" class="product-meta__share-label link hidden-tablet-and-up" aria-controls="mobile-share-buttons-{{ section.id }}" aria-expanded="false">{{ 'product.general.share' | t }}</button>
           <div class="product-meta__share-label hidden-phone">{{ 'product.general.share' | t }}</div>

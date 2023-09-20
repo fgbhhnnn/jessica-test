@@ -5,7 +5,7 @@
         <div class="page-header__text-wrapper text-container">
           <h1 class="heading h2">{{ 'cart.general.title' | t }}</h1>
 
-          {%- if settings.cart_show_free_shipping_threshold and settings.cart_free_shipping_threshold != '' -%}
+          {%- if settings.cart_show_free_shipping_threshold and settings.cart_free_shipping_threshold != '' and cart.requires_shipping -%}
             {%- assign free_shipping_thresholds = settings.cart_free_shipping_threshold | remove: ' ' | split: ',' -%}
             {%- assign has_found_matching_threshold = false -%}
 
@@ -28,11 +28,28 @@
             {%- if has_found_matching_threshold -%}
               {%- assign threshold_in_cents = free_shipping_calculated_threshold | times: 100 -%}
 
-              <free-shipping-bar threshold="{{ threshold_in_cents }}" class="shipping-bar shipping-bar--large" style="--progress: {{ cart.total_price | times: 1.0 | divided_by: threshold_in_cents | at_most: 1 }}">
-                {%- if cart.total_price >= threshold_in_cents -%}
+              {%- assign calculated_total_price = cart.total_price -%}
+
+              {%- for line_item in cart.items -%}
+                {%- unless line_item.requires_shipping -%}
+                  {%- assign calculated_total_price = calculated_total_price | minus: line_item.final_line_price -%}
+                {%- endunless -%}
+              {%- endfor -%}
+
+              {% comment %}We have to remove the cart level discount from the calculated amount{% endcomment %}
+              {%- assign total_cart_discount = 0 -%}
+
+              {%- for discount_application in cart.cart_level_discount_applications -%}
+                {%- assign total_cart_discount = total_cart_discount | plus: discount_application.total_allocated_amount -%}
+              {%- endfor -%}
+
+              {%- assign calculated_total_price = calculated_total_price | minus: total_cart_discount -%}
+
+              <free-shipping-bar threshold="{{ threshold_in_cents }}" class="shipping-bar shipping-bar--large" style="--progress: {{ calculated_total_price | times: 1.0 | divided_by: threshold_in_cents | at_most: 1 }}">
+                {%- if calculated_total_price >= threshold_in_cents -%}
                   <span class="shipping-bar__text">{{ 'cart.general.free_shipping' | t }}</span>
                 {%- else -%}
-                  {%- capture remaining_amount -%}{{ cart.total_price | minus: threshold_in_cents | abs | money }}{%- endcapture -%}
+                  {%- capture remaining_amount -%}{{ calculated_total_price | minus: threshold_in_cents | abs | money }}{%- endcapture -%}
                   <span class="shipping-bar__text">{{ 'cart.general.free_shipping_remaining_html' | t: remaining_amount: remaining_amount }}</span>
                 {%- endif -%}
 
@@ -55,9 +72,7 @@
 
     {%- if cart.item_count > 0 -%}
       <div class="page-content page-content--fluid">
-        <form action="{{ routes.cart_url }}" method="post" novalidate class="cart">
-          <input type="hidden" name="checkout">
-
+        <div class="cart">
           <div class="cart__content">
             <table class="line-item-table table table--loose">
               <thead class="line-item-table__header-group hidden-phone">
@@ -74,7 +89,7 @@
                     <td class="line-item__product">
                       <div class="line-item__content-wrapper">
                         <a href="{{ line_item.url }}" class="line-item__image-wrapper" tabindex="-1" aria-hidden="true">
-                          <img class="line-item__image" loading="sizes" sizes="(max-width: 740px) 80px, 92px" {% render 'image-attributes', image: line_item.image, sizes: '80,92,160,184,240,276' %}>
+                          {{- line_item.image | image_url: width: line_item.image.width | image_tag: loading: 'lazy', sizes: '(max-width: 740px) 80px, 92px', widths: '80,92,160,184,240,276', class: 'line-item__image' -}}
                         </a>
 
                         {%- capture unit_price -%}
@@ -284,7 +299,7 @@
                       <div class="input">
                         <label class="input__block-label" for="shipping-estimator[country]">{{ 'cart.shipping_estimator.country' | t }}</label>
                         <div class="select-wrapper">
-                          <select class="select" is="country-selector" name="shipping-estimator[country]" id="shipping-estimator[country]" aria-owns="shipping-estimator-province-wrapper" {% if customer and customer.default_address %}data-default="{{ customer.default_address.country }}"{% endif %}>{{ country_option_tags }}</select>
+                          <select class="select" is="country-selector" name="shipping-estimator[country]" id="shipping-estimator[country]" aria-owns="shipping-estimator-province-wrapper" {% if customer and customer.default_address %}data-default="{{ customer.default_address.country }}"{% else %}data-default="{{ section.settings.shipping_estimator_default_country }}"{% endif %}>{{ country_option_tags }}</select>
                           {%- render 'icon' with 'chevron' -%}
                         </div>
                       </div>
@@ -312,7 +327,9 @@
 
           <div class="cart__aside">
             <safe-sticky offset="24" class="cart__aside-inner">
-              <div class="cart__recap">
+              <form action="{{ routes.cart_url }}" method="post" novalidate class="cart__recap">
+                <input type="hidden" name="checkout">
+
                 {%- for block in section.blocks -%}
                   {%- case block.type -%}
                     {%- when 'totals' -%}
@@ -373,11 +390,11 @@
                   {%- endcase -%}
                 {%- endfor -%}
 
-                <button type="submit" is="loader-button" class="cart__checkout-button checkout-button button button--primary button--full" name="checkout">
+                <button type="submit" class="cart__checkout-button checkout-button button button--primary button--full" name="checkout">
                   <span class="checkout-button__lock">{%- render 'icon' with 'lock' -%}</span>
                   {{- 'cart.general.checkout' | t -}}
                 </button>
-              </div>
+              </form>
 
               {%- if section.settings.show_payment_methods and shop.enabled_payment_types.size > 0 -%}
                 <div class="cart__payment-methods">
@@ -392,7 +409,7 @@
               {%- endif -%}
             </safe-sticky>
           </div>
-        </form>
+        </div>
       </div>
     {%- endif -%}
   </div>

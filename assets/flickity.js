@@ -441,12 +441,14 @@
           this.element.setAttribute("aria-hidden", "true");
           this.x = 0;
           this.shift = 0;
+          this.element.style[this.parent.originSide] = 0;
         };
         proto.destroy = function() {
           this.unselect();
           this.element.style.position = "";
           var side = this.parent.originSide;
           this.element.style[side] = "";
+          this.element.style.transform = "";
           this.element.removeAttribute("aria-hidden");
         };
         proto.getSize = function() {
@@ -462,8 +464,9 @@
           this.target = this.x + this.size[marginProperty] + this.size.width * this.parent.cellAlign;
         };
         proto.renderPosition = function(x) {
-          var side = this.parent.originSide;
-          this.element.style[side] = this.parent.getPositionValue(x);
+          var sideOffset = this.parent.originSide === "left" ? 1 : -1;
+          var adjustedX = this.parent.options.percentPosition ? x * sideOffset * (this.parent.size.innerWidth / this.size.width) : x * sideOffset;
+          this.element.style.transform = "translateX(" + this.parent.getPositionValue(adjustedX) + ")";
         };
         proto.select = function() {
           this.element.classList.add("is-selected");
@@ -1205,7 +1208,7 @@
         };
         utils.debounceMethod(Flickity2, "onresize", 150);
         proto.resize = function() {
-          if (!this.isActive) {
+          if (!this.isActive || this.isAnimating || this.isDragging) {
             return;
           }
           this.getSize();
@@ -1342,10 +1345,10 @@
           isAdd = isAdd === void 0 ? true : isAdd;
           var bindMethod = isAdd ? "addEventListener" : "removeEventListener";
           var startEvent = "mousedown";
-          if (window2.PointerEvent) {
-            startEvent = "pointerdown";
-          } else if ("ontouchstart" in window2) {
+          if ("ontouchstart" in window2) {
             startEvent = "touchstart";
+          } else if (window2.PointerEvent) {
+            startEvent = "pointerdown";
           }
           elem[bindMethod](startEvent, this);
         };
@@ -1686,18 +1689,11 @@
         var proto = Flickity2.prototype;
         utils.extend(proto, Unidragger.prototype);
         proto._touchActionValue = "pan-y";
-        var isTouch = "createTouch" in document;
-        var isTouchmoveScrollCanceled = false;
         proto._createDrag = function() {
           this.on("activate", this.onActivateDrag);
           this.on("uiChange", this._uiChangeDrag);
           this.on("deactivate", this.onDeactivateDrag);
           this.on("cellChange", this.updateDraggable);
-          if (isTouch && !isTouchmoveScrollCanceled) {
-            window2.addEventListener("touchmove", function() {
-            });
-            isTouchmoveScrollCanceled = true;
-          }
         };
         proto.onActivateDrag = function() {
           this.handles = [this.viewport];
@@ -2788,20 +2784,10 @@
         e.preventDefault();
     }, { passive: false });
   })();
-  (() => {
-    let originalResizeMethod = import_flickity_fade.default.prototype.resize, lastWidth = window.innerWidth;
-    import_flickity_fade.default.prototype.resize = function() {
-      if (window.innerWidth === lastWidth) {
-        return;
-      }
-      lastWidth = window.innerWidth;
-      originalResizeMethod.apply(this, arguments);
-    };
-  })();
   window.ThemeFlickity = import_flickity_fade.default;
 })();
 /*!
- * Flickity v2.2.2
+ * Flickity v2.3.0
  * Touch, responsive, flickable carousels
  *
  * Licensed GPLv3 for open source use
@@ -2811,12 +2797,12 @@
  * Copyright 2015-2021 Metafizzy
  */
 /*!
- * Unidragger v2.3.1
+ * Unidragger v2.4.0
  * Draggable base class
  * MIT license
  */
 /*!
- * Unipointer v2.3.0
+ * Unipointer v2.4.0
  * base class for doing one thing with pointer event
  * MIT license
  */

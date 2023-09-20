@@ -33,7 +33,7 @@
   }
 </style>
 
-<section class="section {% unless blends_with_background or is_boxed %}section--flush{% endunless %}">
+<section class="{% if section.settings.add_vertical_spacing %}section{% endif %} {% unless blends_with_background or is_boxed %}section--flush{% endunless %}">
   <div {% if is_boxed %}class="container"{% endif %}>
     <div class="section__color-wrapper {% if is_boxed %}section__color-wrapper--boxed{% endif %}">
       <div class="{% unless is_boxed %}container{% endunless %} {% unless blends_with_background %}vertical-breather{% endunless %}">
@@ -63,6 +63,9 @@
 {
   "name": "Custom Liquid",
   "class": "shopify-section--custom-liquid",
+  "disabled_on": {
+    "groups": ["custom.overlay"]
+  },
   "settings": [
     {
       "type": "text",
@@ -82,6 +85,12 @@
       "label": "Liquid",
       "info": "Add app snippets or other Liquid code to create advanced customizations.",
       "default": "<p style=\"text-align: center\">Write or copy/paste Liquid code</p>"
+    },
+    {
+      "type": "checkbox",
+      "id": "add_vertical_spacing",
+      "label": "Add vertical spacing",
+      "default": true
     },
     {
       "type": "select",

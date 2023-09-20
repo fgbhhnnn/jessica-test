@@ -299,7 +299,7 @@
     hideLoadingBar() {
       triggerEvent(document.documentElement, "theme:loading:end");
     }
-    untilVisible(intersectionObserverOptions = { rootMargin: "0px", threshold: 0.2 }) {
+    untilVisible(intersectionObserverOptions = { rootMargin: "30px 0px", threshold: 0 }) {
       const onBecameVisible = () => {
         this.classList.add("became-visible");
         this.style.opacity = "1";
@@ -2185,15 +2185,16 @@
           }
         }
       }
-      if (this.provinceElement.hasAttribute("data-default")) {
-        for (let i = 0; i !== this.provinceElement.options.length; ++i) {
-          if (this.provinceElement.options[i].text === this.provinceElement.getAttribute("data-default")) {
-            this.provinceElement.selectedIndex = i;
+      this._updateProvinceVisibility();
+      const provinceSelectElement = this.provinceElement.tagName === "SELECT" ? this.provinceElement : this.provinceElement.querySelector("select");
+      if (provinceSelectElement.hasAttribute("data-default")) {
+        for (let i = 0; i !== provinceSelectElement.options.length; ++i) {
+          if (provinceSelectElement.options[i].text === provinceSelectElement.getAttribute("data-default")) {
+            provinceSelectElement.selectedIndex = i;
             break;
           }
         }
       }
-      this._updateProvinceVisibility();
     }
     _updateProvinceVisibility() {
       const selectedOption = this.options[this.selectedIndex];
@@ -2385,7 +2386,8 @@
       if (!cellElement || isVideoOrModelType || window.matchMedia(window.themeVariables.breakpoints.phone).matches) {
         return;
       }
-      if (pointer.offsetX > cellElement.clientWidth / 2) {
+      const flickityViewport = flickityInstance.viewport, boundingRect = flickityViewport.getBoundingClientRect(), halfEdge = Math.floor(boundingRect.right - boundingRect.width / 2);
+      if (pointer.clientX > halfEdge) {
         flickityInstance.next();
       } else {
         flickityInstance.previous();
@@ -2500,7 +2502,9 @@
         await this._setupPlayer();
       }
       if (this.provider === "youtube") {
-        this.querySelector("iframe").contentWindow.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: "" }), "*");
+        setTimeout(() => {
+          this.querySelector("iframe").contentWindow.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: "" }), "*");
+        }, 150);
       } else if (this.provider === "vimeo") {
         this.querySelector("iframe").contentWindow.postMessage(JSON.stringify({ method: "play" }), "*");
       }
@@ -2635,8 +2639,14 @@
       }
     }
     _replaceContent() {
-      const node = this.querySelector("template").content.firstElementChild.cloneNode(true);
-      this.innerHTML = "";
+      let node = this.querySelector("template");
+      if (!node) {
+        return;
+      }
+      node = node.content.firstElementChild.cloneNode(true);
+      if (!this.hasAttribute("autoplay")) {
+        this.innerHTML = "";
+      }
       this.appendChild(node);
       this.firstElementChild.addEventListener("play", () => {
         this.dispatchEvent(new CustomEvent("video:played", { bubbles: true }));
@@ -2816,6 +2826,7 @@
       clearInterval(this._interval);
     }
     _startPlayer() {
+      clearInterval(this._interval);
       this._interval = setInterval(this.next.bind(this), parseInt(this.getAttribute("cycle-speed")) * 1e3);
     }
     _updateCustomProperties(entries) {
@@ -2920,7 +2931,7 @@
       return this.getAttribute("terms");
     }
     get completeFor() {
-      return JSON.parse(this.getAttribute("complete-for")).filter((item) => !(item === ""));
+      return this.getAttribute("complete-for").split(",");
     }
     async _completeSearch() {
       const promisesList = [];
@@ -2981,15 +2992,16 @@
   // js/custom-element/section/product-recommendations/product-recommendations.js
   var ProductRecommendations = class extends HTMLElement {
     async connectedCallback() {
-      if (!this.hasAttribute("use-automatic-recommendations")) {
-        return;
-      }
-      const response = await fetch(`${window.themeVariables.routes.productRecommendationsUrl}?product_id=${this.productId}&limit=${this.recommendationsCount}&section_id=${this.sectionId}`);
+      const response = await fetch(`${window.themeVariables.routes.productRecommendationsUrl}?product_id=${this.productId}&limit=${this.recommendationsCount}&section_id=${this.sectionId}&intent=${this.intent}`);
       const div = document.createElement("div");
       div.innerHTML = await response.text();
       const productRecommendationsElement = div.querySelector("product-recommendations");
       if (productRecommendationsElement.hasChildNodes()) {
         this.innerHTML = productRecommendationsElement.innerHTML;
+      } else {
+        if (this.intent === "complementary") {
+          this.remove();
+        }
       }
     }
     get productId() {
@@ -3000,6 +3012,9 @@
     }
     get recommendationsCount() {
       return parseInt(this.getAttribute("recommendations-count") || 4);
+    }
+    get intent() {
+      return this.getAttribute("intent");
     }
   };
   window.customElements.define("product-recommendations", ProductRecommendations);
@@ -3043,7 +3058,7 @@
     if (size === "master") {
       return src.replace(/http(s)?:/, "");
     }
-    const match = src.match(/\.(jpg|jpeg|gif|png|bmp|bitmap|tiff|tif)(\?v=\d+)?$/i);
+    const match = src.match(/\.(jpg|jpeg|gif|png|bmp|bitmap|tiff|tif|webp)(\?v=\d+)?$/i);
     if (match) {
       const prefix = src.split(match[0]);
       const suffix = match[0];
@@ -3651,12 +3666,29 @@
   var ShopTheLookNav = class extends CustomHTMLElement {
     connectedCallback() {
       this.shopTheLook = this.closest("shop-the-look");
+      this.inTransition = false;
+      this.pendingTransition = false;
+      this.pendingTransitionTo = null;
       this.delegate.on("click", '[data-action="prev"]', () => this.shopTheLook.previous());
       this.delegate.on("click", '[data-action="next"]', () => this.shopTheLook.next());
     }
-    transitionToIndex(index, shouldAnimate = true) {
-      const indexElements = Array.from(this.querySelectorAll(".shop-the-look__counter-page-transition")), currentElement = indexElements.find((item) => !item.hasAttribute("hidden")), nextElement = indexElements[index];
-      currentElement.animate({ transform: ["translateY(0)", "translateY(-100%)"] }, { duration: shouldAnimate ? 1e3 : 0, easing: "cubic-bezier(1, 0, 0, 1)" }).onfinish = () => currentElement.setAttribute("hidden", "");
+    transitionToIndex(selectedIndex, nextIndex, shouldAnimate = true) {
+      const indexElements = Array.from(this.querySelectorAll(".shop-the-look__counter-page-transition")), currentElement = indexElements[selectedIndex], nextElement = indexElements[nextIndex];
+      if (this.inTransition) {
+        this.pendingTransition = true;
+        this.pendingTransitionTo = nextIndex;
+        return;
+      }
+      this.inTransition = true;
+      currentElement.animate({ transform: ["translateY(0)", "translateY(-100%)"] }, { duration: shouldAnimate ? 1e3 : 0, easing: "cubic-bezier(1, 0, 0, 1)" }).onfinish = () => {
+        currentElement.setAttribute("hidden", "");
+        this.inTransition = false;
+        if (this.pendingTransition && this.pendingTransitionTo !== nextIndex) {
+          this.pendingTransition = false;
+          this.transitionToIndex(nextIndex, this.pendingTransitionTo, shouldAnimate);
+          this.pendingTransitionTo = null;
+        }
+      };
       nextElement.removeAttribute("hidden");
       nextElement.animate({ transform: ["translateY(100%)", "translateY(0)"] }, { duration: shouldAnimate ? 1e3 : 0, easing: "cubic-bezier(1, 0, 0, 1)" });
     }
@@ -3709,7 +3741,7 @@
       }
       this.hasPendingTransition = true;
       if (currentLook !== nextLook) {
-        this.nav.transitionToIndex(index, animate);
+        this.nav.transitionToIndex(this.selectedIndex, index, animate);
         currentLook.transitionToLeave();
       }
       nextLook.transitionToEnter(animate);
@@ -3859,7 +3891,7 @@
       }
     }
     async _setupVisibility() {
-      await this.untilVisible();
+      await this.untilVisible({ rootMargin: "50px 0px", threshold: 0 });
       const animation = new CustomAnimation(new ParallelEffect(this.items.map((item, index) => {
         return new CustomKeyframeEffect(item, {
           opacity: [0, 1],
@@ -4242,7 +4274,7 @@
       }
     }
     async _doPredictiveSearch(term) {
-      const response = await fetch(`${window.themeVariables.routes.predictiveSearchUrl}?q=${term}&resources[limit]=10&resources[type]=${window.themeVariables.settings.searchMode}&resources[options[unavailable_products]]=${window.themeVariables.settings.searchUnavailableProducts}&resources[options[fields]]=title,body,product_type,variants.title,variants.sku,vendor&section_id=predictive-search`, {
+      const response = await fetch(`${window.themeVariables.routes.predictiveSearchUrl}?q=${encodeURIComponent(term)}&resources[limit]=10&resources[limit_scope]=each&section_id=predictive-search`, {
         signal: this.abortController.signal
       });
       const div = document.createElement("div");
@@ -4250,64 +4282,12 @@
       return { hasResults: div.querySelector(".predictive-search__results-categories") !== null, html: div.firstElementChild.innerHTML };
     }
     async _doLiquidSearch(term) {
-      let promises = [], supportedTypes = window.themeVariables.settings.searchMode.split(",").filter((item) => item !== "collection");
-      supportedTypes.forEach((searchType) => {
-        promises.push(fetch(`${window.themeVariables.routes.searchUrl}?section_id=predictive-search-compatibility&q=${term}&type=${searchType}&options[unavailable_products]=${window.themeVariables.settings.searchUnavailableProducts}&options[prefix]=last`, {
-          signal: this.abortController.signal
-        }));
+      const response = await fetch(`${window.themeVariables.routes.searchUrl}?q=${encodeURIComponent(term)}&resources[limit]=50&section_id=predictive-search-compatibility`, {
+        signal: this.abortController.signal
       });
-      let results = await Promise.all(promises), resultsByCategories = {};
-      for (const [index, value] of results.entries()) {
-        const resultAsText = await value.text();
-        const fakeDiv = document.createElement("div");
-        fakeDiv.innerHTML = resultAsText;
-        fakeDiv.innerHTML = fakeDiv.firstElementChild.innerHTML;
-        if (fakeDiv.childElementCount > 0) {
-          resultsByCategories[supportedTypes[index]] = fakeDiv.innerHTML;
-        }
-      }
-      if (Object.keys(resultsByCategories).length > 0) {
-        const entries = Object.entries(resultsByCategories), keys = Object.keys(resultsByCategories);
-        let html = `
-        <tabs-nav class="tabs-nav tabs-nav--edge2edge tabs-nav--narrow tabs-nav--no-border">
-          <scrollable-content class="tabs-nav__scroller hide-scrollbar">
-            <div class="tabs-nav__scroller-inner">
-              <div class="tabs-nav__item-list">
-      `;
-        for (let [type, value] of entries) {
-          html += `
-          <button type="button" class="tabs-nav__item heading heading--small" aria-expanded="${type === keys[0] ? "true" : "false"}" aria-controls="predictive-search-${type}">
-            ${window.themeVariables.strings["search" + type.charAt(0).toUpperCase() + type.slice(1) + "s"]}
-          </button>
-        `;
-        }
-        html += `
-              </div>
-            </div>
-          </scrollable-content>
-        </tabs-nav>
-      `;
-        html += '<div class="predictive-search__results-categories">';
-        for (let [type, value] of entries) {
-          html += `
-          <div class="predictive-search__results-categories-item" ${type !== keys[0] ? "hidden" : ""} id="predictive-search-${type}">
-            ${value}
-          </div>
-        `;
-        }
-        html += "</div>";
-        return { hasResults: true, html };
-      } else {
-        return {
-          hasResults: false,
-          html: `
-        <p class="text--large">${window.themeVariables.strings.searchNoResults}</p>
-          <div class="button-wrapper">
-            <button type="button" data-action="reset-search" class="button button--primary">${window.themeVariables.strings.searchNewSearch}</button>
-          </div>
-        `
-        };
-      }
+      const div = document.createElement("div");
+      div.innerHTML = await response.text();
+      return { hasResults: div.querySelector(".predictive-search__results-categories") !== null, html: div.firstElementChild.innerHTML };
     }
     _startNewSearch() {
       this.inputElement.value = "";
@@ -4565,7 +4545,12 @@
             parentElement.removeEventListener("mouseleave", leaveListener);
           }
         };
+        const leaveDocumentListener = () => {
+          this.closeDropdown(parentElement);
+          document.documentElement.removeEventListener("mouseleave", leaveDocumentListener);
+        };
         parentElement.addEventListener("mouseleave", leaveListener);
+        document.documentElement.addEventListener("mouseleave", leaveDocumentListener);
         openingTimeout = null;
         this.dispatchEvent(new CustomEvent("desktop-nav:dropdown:open", { bubbles: true }));
       }, 100);
@@ -4703,6 +4688,26 @@
     }
   };
   window.customElements.define("store-header", StoreHeader);
+
+  // js/custom-element/section/product/gift-card-recipient.js
+  var GiftCardRecipient = class extends HTMLElement {
+    connectedCallback() {
+      var _a;
+      const properties = Array.from(this.querySelectorAll('[name*="properties"]')), checkboxPropertyName = "properties[__shopify_send_gift_card_to_recipient]";
+      this.recipientCheckbox = properties.find((input) => input.name === checkboxPropertyName);
+      this.recipientOtherProperties = properties.filter((input) => input.name !== checkboxPropertyName);
+      this.recipientFieldsContainer = this.querySelector(".gift-card-recipient__fields");
+      (_a = this.recipientCheckbox) == null ? void 0 : _a.addEventListener("change", this._synchronizeProperties.bind(this));
+      this._synchronizeProperties();
+    }
+    _synchronizeProperties() {
+      this.recipientOtherProperties.forEach((property) => property.disabled = !this.recipientCheckbox.checked);
+      this.recipientFieldsContainer.classList.toggle("js:hidden", !this.recipientCheckbox.checked);
+    }
+  };
+  if (!window.customElements.get("gift-card-recipient")) {
+    window.customElements.define("gift-card-recipient", GiftCardRecipient);
+  }
 
   // js/custom-element/section/product/image-zoom.js
   var PhotoSwipeUi = class {
@@ -4963,9 +4968,6 @@
   var ProductForm = class extends HTMLFormElement {
     connectedCallback() {
       this.id.disabled = false;
-      if (window.themeVariables.settings.cartType === "page" || window.themeVariables.settings.pageType === "cart") {
-        return;
-      }
       this.addEventListener("submit", this._onSubmit.bind(this));
     }
     async _onSubmit(event) {
@@ -4997,6 +4999,9 @@
       });
       const responseJson = await response.json();
       if (response.ok) {
+        if (window.themeVariables.settings.cartType === "page" || window.themeVariables.settings.pageType === "cart") {
+          return window.location.href = `${Shopify.routes.root}cart`;
+        }
         this.dispatchEvent(new CustomEvent("variant:added", {
           bubbles: true,
           detail: {
@@ -5011,14 +5016,15 @@
               cart: cartContent
             }
           }));
+          cartContent["sections"] = responseJson["sections"];
+          document.documentElement.dispatchEvent(new CustomEvent("cart:refresh", {
+            bubbles: true,
+            detail: {
+              cart: cartContent,
+              openMiniCart: window.themeVariables.settings.cartType === "drawer" && this.closest(".drawer") === null
+            }
+          }));
         });
-        document.documentElement.dispatchEvent(new CustomEvent("cart:refresh", {
-          bubbles: true,
-          detail: {
-            cart: responseJson,
-            openMiniCart: window.themeVariables.settings.cartType === "drawer" && this.closest(".drawer") === null
-          }
-        }));
       }
       this.dispatchEvent(new CustomEvent("cart-notification:show", {
         bubbles: true,
@@ -5193,7 +5199,7 @@
         value = formatWithDelimiters(cents, 2, "'", ".");
         break;
       case "amount_no_decimals_with_comma_separator":
-        value = formatWithDelimiters(cents, 0, ",", ".");
+        value = formatWithDelimiters(cents, 0, ".", ",");
         break;
       case "amount_no_decimals_with_space_separator":
         value = formatWithDelimiters(cents, 0, " ");
@@ -5421,7 +5427,7 @@
     selectVariant(id) {
       var _a;
       if (!this._isVariantSelectable(this._getVariantById(id))) {
-        id = this._getFirstMatchingAvailableVariant()["id"];
+        id = this._getFirstMatchingAvailableOrSelectableVariant()["id"];
       }
       if (((_a = this.selectedVariant) == null ? void 0 : _a.id) === id) {
         return;
@@ -5477,13 +5483,17 @@
         return variant["available"] || !this.hideSoldOutVariants && !variant["available"];
       }
     }
-    _getFirstMatchingAvailableVariant() {
+    _getFirstMatchingAvailableOrSelectableVariant() {
       let options = this._getSelectedOptionValues(), matchedVariant = null, slicedCount = 0;
       do {
         options.pop();
         slicedCount += 1;
         matchedVariant = this.product["variants"].find((variant) => {
-          return variant["available"] && variant["options"].slice(0, variant["options"].length - slicedCount).every((value, index) => value === options[index]);
+          if (this.hideSoldOutVariants) {
+            return variant["available"] && variant["options"].slice(0, variant["options"].length - slicedCount).every((value, index) => value === options[index]);
+          } else {
+            return variant["options"].slice(0, variant["options"].length - slicedCount).every((value, index) => value === options[index]);
+          }
         });
       } while (!matchedVariant && options.length > 0);
       return matchedVariant;
@@ -5625,7 +5635,7 @@
         const filtersTempDiv = fakeDiv.querySelector("#facet-filters");
         if (filtersTempDiv) {
           const previousScrollTop = this.querySelector("#facet-filters .drawer__content").scrollTop;
-          Array.from(this.querySelectorAll("#facet-filters-form .collapsible-toggle")).forEach((filterToggle) => {
+          Array.from(this.querySelectorAll("#facet-filters-form .collapsible-toggle[aria-controls]")).forEach((filterToggle) => {
             const filtersTempDivToggle = filtersTempDiv.querySelector(`[aria-controls="${filterToggle.getAttribute("aria-controls")}"]`), isExpanded = filterToggle.getAttribute("aria-expanded") === "true";
             filtersTempDivToggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
             filtersTempDivToggle.nextElementSibling.toggleAttribute("open", isExpanded);
@@ -5709,6 +5719,19 @@
   var CartCount = class extends CustomHTMLElement {
     connectedCallback() {
       this.rootDelegate.on("cart:updated", (event) => this.innerText = event.detail.cart["item_count"]);
+      this.rootDelegate.on("cart:refresh", this._updateCartCount.bind(this));
+    }
+    _updateCartCount(event) {
+      var _a;
+      if ((_a = event == null ? void 0 : event.detail) == null ? void 0 : _a.cart) {
+        this.innerText = event.detail.cart["item_count"];
+      } else {
+        fetch(Shopify.routes.root + "cart.js").then((response) => {
+          response.json().then((responseAsJson) => {
+            this.innerText = responseAsJson["item_count"];
+          });
+        });
+      }
     }
   };
   window.customElements.define("cart-count", CartCount);
@@ -5724,7 +5747,7 @@
     async _rerenderCart(event) {
       var _a;
       let cartContent = null, html = "";
-      if (event.detail && event.detail["cart"]) {
+      if (event.detail && event.detail["cart"] && event.detail["cart"]["sections"]) {
         cartContent = event.detail["cart"];
         html = event.detail["cart"]["sections"]["mini-cart"];
       } else {
@@ -5876,7 +5899,8 @@
       return parseFloat(this.getAttribute("threshold"));
     }
     _onCartUpdated(event) {
-      this.style.setProperty("--progress", Math.min(parseFloat(event.detail["cart"]["total_price"]) / this.threshold, 1));
+      const totalPrice = event.detail["cart"]["items"].filter((item) => item["requires_shipping"]).reduce((sum, item) => sum + item["final_line_price"], 0);
+      this.style.setProperty("--progress", Math.min(totalPrice / this.threshold, 1));
     }
   };
   window.customElements.define("free-shipping-bar", FreeShippingBar);

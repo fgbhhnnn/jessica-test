@@ -29,7 +29,7 @@
 
                   {%- if request.locale.iso_code == 'ja' -%}
                     <div class="input">
-                      <input type="text" id="customer[last_name]" class="input__field" name="customer[first_name]" required="required" autocomplete="family-name" {% if form.errors contains 'last_name' %}aria-invalid="true" aria-describedby="register-form-error"{% endif %}>
+                      <input type="text" id="customer[last_name]" class="input__field" name="customer[last_name]" required="required" autocomplete="family-name" {% if form.errors contains 'last_name' %}aria-invalid="true" aria-describedby="register-form-error"{% endif %}>
                       <label for="customer[last_name]" class="input__label">{{ 'customer.register.last_name' | t }}</label>
                     </div>
 
@@ -44,7 +44,7 @@
                     </div>
 
                     <div class="input">
-                      <input type="text" id="customer[last_name]" class="input__field" name="customer[first_name]" required="required" autocomplete="family-name" {% if form.errors contains 'last_name' %}aria-invalid="true" aria-describedby="register-form-error"{% endif %}>
+                      <input type="text" id="customer[last_name]" class="input__field" name="customer[last_name]" required="required" autocomplete="family-name" {% if form.errors contains 'last_name' %}aria-invalid="true" aria-describedby="register-form-error"{% endif %}>
                       <label for="customer[last_name]" class="input__label">{{ 'customer.register.last_name' | t }}</label>
                     </div>
                   {%- endif -%}

@@ -66,21 +66,23 @@
 <section class="section {% unless blends_with_background %}section--flush{% endunless %}">
   <div class="section__color-wrapper">
     <div class="container {% unless blends_with_background %}vertical-breather{% endunless %}">
-      {%- if section.settings.title != blank or section.settings.subheading != blank or section.settings.content != blank -%}
+      {%- if section.blocks.size > 1 or section.settings.title != blank or section.settings.subheading != blank or section.settings.content != blank -%}
         <header class="section__header {% if section.settings.content != blank %}section__header--tight{% endif %}">
-          <div class="text-container">
-            {%- if section.settings.subheading != blank -%}
-              <h2 class="heading heading--small">{{ section.settings.subheading }}</h2>
-            {%- endif -%}
+          {%- if section.settings.title != blank or section.settings.subheading != blank or section.settings.content != blank -%}
+            <div class="text-container">
+              {%- if section.settings.subheading != blank -%}
+                <h2 class="heading heading--small">{{ section.settings.subheading }}</h2>
+              {%- endif -%}
 
-            {%- if section.settings.title != blank -%}
-              <h3 class="heading h2">{{ section.settings.title }}</h3>
-            {%- endif -%}
+              {%- if section.settings.title != blank -%}
+                <h3 class="heading h2">{{ section.settings.title }}</h3>
+              {%- endif -%}
 
-            {%- if section.settings.content != blank -%}
-              {{- section.settings.content -}}
-            {%- endif -%}
-          </div>
+              {%- if section.settings.content != blank -%}
+                {{- section.settings.content -}}
+              {%- endif -%}
+            </div>
+          {%- endif -%}
 
           {%- if section.blocks.size > 1 -%}
             <tabs-nav class="tabs-nav tabs-nav--center tabs-nav--edge2edge">
@@ -139,6 +141,10 @@
               {%- endif -%}
 
               {%- if products_shown > section.settings.products_per_row -%}
+                {%- if smallest_image_aspect_ratio == 0 -%}
+                  {%- assign smallest_image_aspect_ratio = 1 -%}
+                {%- endif -%}
+
                 <prev-next-buttons class="product-list__prev-next hidden-pocket" style="--smallest-image-aspect-ratio: {{ smallest_image_aspect_ratio }}">
                   <button class="product-list__arrow prev-next-button prev-next-button--prev" disabled>
                     <span class="visually-hidden">{{ 'general.accessibility.previous' | t }}</span>
@@ -170,6 +176,10 @@
   "name": "Featured collections",
   "class": "shopify-section--featured-collections",
   "max_blocks": 5,
+  "disabled_on": {
+    "templates": ["password"],
+    "groups": ["header", "custom.overlay"]
+  },
   "blocks": [
     {
       "type": "collection",

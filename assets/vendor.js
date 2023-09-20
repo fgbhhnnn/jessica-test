@@ -2,25 +2,10 @@
   // node_modules/@ungap/custom-elements/index.js
   (function() {
     "use strict";
-    var Lie = typeof Promise === "function" ? Promise : function(fn) {
-      var queue = [], resolved = 0, value;
-      fn(function($) {
-        value = $;
-        resolved = 1;
-        queue.splice(0).forEach(then);
-      });
-      return {
-        then
-      };
-      function then(fn2) {
-        return resolved ? setTimeout(fn2, 0, value) : queue.push(fn2), this;
-      }
-    };
     var attributesObserver = function(whenDefined2, MutationObserver2) {
       var attributeChanged = function attributeChanged2(records) {
-        for (var i = 0, length = records.length; i < length; i++) {
+        for (var i = 0, length = records.length; i < length; i++)
           dispatch(records[i]);
-        }
       };
       var dispatch = function dispatch2(_ref2) {
         var target = _ref2.target, attributeName = _ref2.attributeName, oldValue = _ref2.oldValue;
@@ -48,45 +33,138 @@
         return target;
       };
     };
-    var TRUE = true, FALSE = false;
-    var QSA$1 = "querySelectorAll";
-    function add(node) {
-      this.observe(node, {
-        subtree: TRUE,
-        childList: TRUE
-      });
+    function _unsupportedIterableToArray(o, minLen) {
+      if (!o)
+        return;
+      if (typeof o === "string")
+        return _arrayLikeToArray(o, minLen);
+      var n = Object.prototype.toString.call(o).slice(8, -1);
+      if (n === "Object" && o.constructor)
+        n = o.constructor.name;
+      if (n === "Map" || n === "Set")
+        return Array.from(o);
+      if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))
+        return _arrayLikeToArray(o, minLen);
     }
-    var notify = function notify2(callback, root, MO) {
-      var loop = function loop2(nodes, added, removed, connected, pass) {
-        for (var i = 0, length = nodes.length; i < length; i++) {
-          var node = nodes[i];
-          if (pass || QSA$1 in node) {
-            if (connected) {
-              if (!added.has(node)) {
-                added.add(node);
-                removed["delete"](node);
-                callback(node, connected);
-              }
-            } else if (!removed.has(node)) {
-              removed.add(node);
-              added["delete"](node);
-              callback(node, connected);
-            }
-            if (!pass)
-              loop2(node[QSA$1]("*"), added, removed, connected, TRUE);
+    function _arrayLikeToArray(arr, len) {
+      if (len == null || len > arr.length)
+        len = arr.length;
+      for (var i = 0, arr2 = new Array(len); i < len; i++)
+        arr2[i] = arr[i];
+      return arr2;
+    }
+    function _createForOfIteratorHelper(o, allowArrayLike) {
+      var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
+      if (!it) {
+        if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+          if (it)
+            o = it;
+          var i = 0;
+          var F = function() {
+          };
+          return {
+            s: F,
+            n: function() {
+              if (i >= o.length)
+                return {
+                  done: true
+                };
+              return {
+                done: false,
+                value: o[i++]
+              };
+            },
+            e: function(e) {
+              throw e;
+            },
+            f: F
+          };
+        }
+        throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+      }
+      var normalCompletion = true, didErr = false, err;
+      return {
+        s: function() {
+          it = it.call(o);
+        },
+        n: function() {
+          var step = it.next();
+          normalCompletion = step.done;
+          return step;
+        },
+        e: function(e) {
+          didErr = true;
+          err = e;
+        },
+        f: function() {
+          try {
+            if (!normalCompletion && it.return != null)
+              it.return();
+          } finally {
+            if (didErr)
+              throw err;
           }
         }
       };
-      var observer = new (MO || MutationObserver)(function(records) {
-        for (var added = new Set(), removed = new Set(), i = 0, length = records.length; i < length; i++) {
-          var _records$i = records[i], addedNodes = _records$i.addedNodes, removedNodes = _records$i.removedNodes;
-          loop(removedNodes, added, removed, FALSE, FALSE);
-          loop(addedNodes, added, removed, TRUE, FALSE);
+    }
+    var TRUE = true, FALSE = false, QSA$1 = "querySelectorAll";
+    var notify = function notify2(callback) {
+      var root = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : document;
+      var MO = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : MutationObserver;
+      var query2 = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : ["*"];
+      var loop = function loop2(nodes, selectors, added, removed, connected, pass) {
+        var _iterator = _createForOfIteratorHelper(nodes), _step;
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done; ) {
+            var node = _step.value;
+            if (pass || QSA$1 in node) {
+              if (connected) {
+                if (!added.has(node)) {
+                  added.add(node);
+                  removed["delete"](node);
+                  callback(node, connected);
+                }
+              } else if (!removed.has(node)) {
+                removed.add(node);
+                added["delete"](node);
+                callback(node, connected);
+              }
+              if (!pass)
+                loop2(node[QSA$1](selectors), selectors, added, removed, connected, TRUE);
+            }
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+      };
+      var mo = new MO(function(records) {
+        if (query2.length) {
+          var selectors = query2.join(",");
+          var added = new Set(), removed = new Set();
+          var _iterator2 = _createForOfIteratorHelper(records), _step2;
+          try {
+            for (_iterator2.s(); !(_step2 = _iterator2.n()).done; ) {
+              var _step2$value = _step2.value, addedNodes = _step2$value.addedNodes, removedNodes = _step2$value.removedNodes;
+              loop(removedNodes, selectors, added, removed, FALSE, FALSE);
+              loop(addedNodes, selectors, added, removed, TRUE, FALSE);
+            }
+          } catch (err) {
+            _iterator2.e(err);
+          } finally {
+            _iterator2.f();
+          }
         }
       });
-      observer.add = add;
-      observer.add(root || document);
-      return observer;
+      var observe = mo.observe;
+      (mo.observe = function(node) {
+        return observe.call(mo, node, {
+          subtree: TRUE,
+          childList: TRUE
+        });
+      })(root);
+      return mo;
     };
     var QSA = "querySelectorAll";
     var _self$1 = self, document$2 = _self$1.document, Element$1 = _self$1.Element, MutationObserver$2 = _self$1.MutationObserver, Set$2 = _self$1.Set, WeakMap$1 = _self$1.WeakMap;
@@ -97,9 +175,8 @@
     var qsaObserver = function(options) {
       var live = new WeakMap$1();
       var drop = function drop2(elements2) {
-        for (var i = 0, length = elements2.length; i < length; i++) {
+        for (var i = 0, length = elements2.length; i < length; i++)
           live["delete"](elements2[i]);
-        }
       };
       var flush = function flush2() {
         var records = observer.takeRecords();
@@ -135,18 +212,17 @@
       };
       var parse2 = function parse3(elements2) {
         var connected = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : true;
-        for (var i = 0, length = elements2.length; i < length; i++) {
+        for (var i = 0, length = elements2.length; i < length; i++)
           notifier(elements2[i], connected);
-        }
       };
       var query2 = options.query;
       var root = options.root || document$2;
-      var observer = notify(notifier, root, MutationObserver$2);
+      var observer = notify(notifier, root, MutationObserver$2, query2);
       var attachShadow2 = Element$1.prototype.attachShadow;
       if (attachShadow2)
-        Element$1.prototype.attachShadow = function(init) {
-          var shadowRoot = attachShadow2.call(this, init);
-          observer.add(shadowRoot);
+        Element$1.prototype.attachShadow = function(init2) {
+          var shadowRoot = attachShadow2.call(this, init2);
+          observer.observe(shadowRoot);
           return shadowRoot;
         };
       if (query2.length)
@@ -158,29 +234,32 @@
         parse: parse2
       };
     };
-    var _self = self, document$1 = _self.document, Map = _self.Map, MutationObserver$1 = _self.MutationObserver, Object$1 = _self.Object, Set$1 = _self.Set, WeakMap = _self.WeakMap, Element2 = _self.Element, HTMLElement2 = _self.HTMLElement, Node = _self.Node, Error2 = _self.Error, TypeError2 = _self.TypeError, Reflect = _self.Reflect;
-    var Promise$1 = self.Promise || Lie;
+    var _self = self, document$1 = _self.document, Map = _self.Map, MutationObserver$1 = _self.MutationObserver, Object$1 = _self.Object, Set$1 = _self.Set, WeakMap = _self.WeakMap, Element = _self.Element, HTMLElement = _self.HTMLElement, Node = _self.Node, Error2 = _self.Error, TypeError$1 = _self.TypeError, Reflect = _self.Reflect;
     var defineProperty = Object$1.defineProperty, keys = Object$1.keys, getOwnPropertyNames = Object$1.getOwnPropertyNames, setPrototypeOf = Object$1.setPrototypeOf;
     var legacy = !self.customElements;
     var expando = function expando2(element) {
       var key = keys(element);
       var value = [];
+      var ignore = new Set$1();
       var length = key.length;
       for (var i = 0; i < length; i++) {
         value[i] = element[key[i]];
-        delete element[key[i]];
+        try {
+          delete element[key[i]];
+        } catch (SafariTP) {
+          ignore.add(i);
+        }
       }
       return function() {
-        for (var _i = 0; _i < length; _i++) {
-          element[key[_i]] = value[_i];
-        }
+        for (var _i = 0; _i < length; _i++)
+          ignore.has(_i) || (element[key[_i]] = value[_i]);
       };
     };
     if (legacy) {
       var HTMLBuiltIn = function HTMLBuiltIn2() {
         var constructor = this.constructor;
         if (!classes.has(constructor))
-          throw new TypeError2("Illegal constructor");
+          throw new TypeError$1("Illegal constructor");
         var is2 = classes.get(constructor);
         if (override)
           return augment(override, is2);
@@ -216,7 +295,7 @@
       var override = null;
       var whenDefined = function whenDefined2(name) {
         if (!defined.has(name)) {
-          var _, $ = new Lie(function($2) {
+          var _, $ = new Promise(function($2) {
             _ = $2;
           });
           defined.set(name, {
@@ -227,42 +306,33 @@
         return defined.get(name).$;
       };
       var augment = attributesObserver(whenDefined, MutationObserver$1);
-      defineProperty(self, "customElements", {
-        configurable: true,
-        value: {
-          define: function define2(is2, Class) {
-            if (registry.has(is2))
-              throw new Error2('the name "'.concat(is2, '" has already been used with this registry'));
-            classes.set(Class, is2);
-            prototypes.set(is2, Class.prototype);
-            registry.set(is2, Class);
-            query.push(is2);
-            whenDefined(is2).then(function() {
-              parse(document$1.querySelectorAll(is2));
-            });
-            defined.get(is2)._(Class);
-          },
-          get: function get2(is2) {
-            return registry.get(is2);
-          },
-          whenDefined
-        }
-      });
-      defineProperty(HTMLBuiltIn.prototype = HTMLElement2.prototype, "constructor", {
+      self.customElements = {
+        define: function define2(is2, Class) {
+          if (registry.has(is2))
+            throw new Error2('the name "'.concat(is2, '" has already been used with this registry'));
+          classes.set(Class, is2);
+          prototypes.set(is2, Class.prototype);
+          registry.set(is2, Class);
+          query.push(is2);
+          whenDefined(is2).then(function() {
+            parse(document$1.querySelectorAll(is2));
+          });
+          defined.get(is2)._(Class);
+        },
+        get: function get2(is2) {
+          return registry.get(is2);
+        },
+        whenDefined
+      };
+      defineProperty(HTMLBuiltIn.prototype = HTMLElement.prototype, "constructor", {
         value: HTMLBuiltIn
       });
-      defineProperty(self, "HTMLElement", {
-        configurable: true,
-        value: HTMLBuiltIn
-      });
-      defineProperty(document$1, "createElement", {
-        configurable: true,
-        value: function value(name, options) {
-          var is2 = options && options.is;
-          var Class = is2 ? registry.get(is2) : registry.get(name);
-          return Class ? new Class() : createElement.call(document$1, name);
-        }
-      });
+      self.HTMLElement = HTMLBuiltIn;
+      document$1.createElement = function(name, options) {
+        var is2 = options && options.is;
+        var Class = is2 ? registry.get(is2) : registry.get(name);
+        return Class ? new Class() : createElement.call(document$1, name);
+      };
       if (!("isConnected" in Node.prototype))
         defineProperty(Node.prototype, "isConnected", {
           configurable: true,
@@ -271,44 +341,42 @@
           }
         });
     } else {
-      try {
-        var LI = function LI2() {
-          return self.Reflect.construct(HTMLLIElement, [], LI2);
-        };
-        LI.prototype = HTMLLIElement.prototype;
-        var is = "extends-li";
-        self.customElements.define("extends-li", LI, {
-          "extends": "li"
-        });
-        legacy = document$1.createElement("li", {
-          is
-        }).outerHTML.indexOf(is) < 0;
-        var _self$customElements = self.customElements, get = _self$customElements.get, _whenDefined = _self$customElements.whenDefined;
-        defineProperty(self.customElements, "whenDefined", {
-          configurable: true,
-          value: function value(is2) {
+      legacy = !self.customElements.get("extends-br");
+      if (legacy) {
+        try {
+          var BR = function BR2() {
+            return self.Reflect.construct(HTMLBRElement, [], BR2);
+          };
+          BR.prototype = HTMLLIElement.prototype;
+          var is = "extends-br";
+          self.customElements.define("extends-br", BR, {
+            "extends": "br"
+          });
+          legacy = document$1.createElement("br", {
+            is
+          }).outerHTML.indexOf(is) < 0;
+          var _self$customElements = self.customElements, get = _self$customElements.get, _whenDefined = _self$customElements.whenDefined;
+          self.customElements.whenDefined = function(is2) {
             var _this = this;
             return _whenDefined.call(this, is2).then(function(Class) {
               return Class || get.call(_this, is2);
             });
-          }
-        });
-      } catch (o_O) {
-        legacy = !legacy;
+          };
+        } catch (o_O) {
+        }
       }
     }
     if (legacy) {
-      var parseShadow = function parseShadow2(element) {
+      var _parseShadow = function _parseShadow2(element) {
         var root = shadowRoots.get(element);
         _parse(root.querySelectorAll(this), element.isConnected);
       };
       var customElements = self.customElements;
-      var attachShadow = Element2.prototype.attachShadow;
       var _createElement = document$1.createElement;
-      var define = customElements.define, _get = customElements.get;
+      var define = customElements.define, _get = customElements.get, upgrade = customElements.upgrade;
       var _ref = Reflect || {
-        construct: function construct2(HTMLElement3) {
-          return HTMLElement3.call(this);
+        construct: function construct2(HTMLElement2) {
+          return HTMLElement2.call(this);
         }
       }, construct = _ref.construct;
       var shadowRoots = new WeakMap();
@@ -351,13 +419,20 @@
             else
               shadows["delete"](element);
             if (_query.length)
-              parseShadow.call(_query, element);
+              _parseShadow.call(_query, element);
           }
         }
       }), parseShadowed = _qsaObserver3.parse;
+      var attachShadow = Element.prototype.attachShadow;
+      if (attachShadow)
+        Element.prototype.attachShadow = function(init2) {
+          var root = attachShadow.call(this, init2);
+          shadowRoots.set(this, root);
+          return root;
+        };
       var _whenDefined2 = function _whenDefined22(name) {
         if (!_defined.has(name)) {
-          var _, $ = new Promise$1(function($2) {
+          var _, $ = new Promise(function($2) {
             _ = $2;
           });
           _defined.set(name, {
@@ -370,13 +445,13 @@
       var _augment = attributesObserver(_whenDefined2, MutationObserver$1);
       var _override = null;
       getOwnPropertyNames(self).filter(function(k) {
-        return /^HTML/.test(k);
+        return /^HTML.*Element$/.test(k);
       }).forEach(function(k) {
-        var HTMLElement3 = self[k];
+        var HTMLElement2 = self[k];
         function HTMLBuiltIn2() {
           var constructor = this.constructor;
           if (!_classes.has(constructor))
-            throw new TypeError2("Illegal constructor");
+            throw new TypeError$1("Illegal constructor");
           var _classes$get = _classes.get(constructor), is2 = _classes$get.is, tag = _classes$get.tag;
           if (is2) {
             if (_override)
@@ -385,77 +460,70 @@
             element.setAttribute("is", is2);
             return _augment(setPrototypeOf(element, constructor.prototype), is2);
           } else
-            return construct.call(this, HTMLElement3, [], constructor);
+            return construct.call(this, HTMLElement2, [], constructor);
         }
-        defineProperty(HTMLBuiltIn2.prototype = HTMLElement3.prototype, "constructor", {
+        defineProperty(HTMLBuiltIn2.prototype = HTMLElement2.prototype, "constructor", {
           value: HTMLBuiltIn2
         });
         defineProperty(self, k, {
           value: HTMLBuiltIn2
         });
       });
-      defineProperty(document$1, "createElement", {
-        configurable: true,
-        value: function value(name, options) {
-          var is2 = options && options.is;
-          if (is2) {
-            var Class = _registry.get(is2);
-            if (Class && _classes.get(Class).tag === name)
-              return new Class();
-          }
-          var element = _createElement.call(document$1, name);
-          if (is2)
-            element.setAttribute("is", is2);
-          return element;
+      document$1.createElement = function(name, options) {
+        var is2 = options && options.is;
+        if (is2) {
+          var Class = _registry.get(is2);
+          if (Class && _classes.get(Class).tag === name)
+            return new Class();
         }
-      });
-      if (attachShadow)
-        Element2.prototype.attachShadow = function(init) {
-          var root = attachShadow.call(this, init);
-          shadowRoots.set(this, root);
-          return root;
-        };
-      defineProperty(customElements, "get", {
-        configurable: true,
-        value: getCE
-      });
-      defineProperty(customElements, "whenDefined", {
-        configurable: true,
-        value: _whenDefined2
-      });
-      defineProperty(customElements, "define", {
-        configurable: true,
-        value: function value(is2, Class, options) {
-          if (getCE(is2))
-            throw new Error2("'".concat(is2, "' has already been defined as a custom element"));
-          var selector;
-          var tag = options && options["extends"];
-          _classes.set(Class, tag ? {
-            is: is2,
-            tag
-          } : {
-            is: "",
-            tag: is2
-          });
+        var element = _createElement.call(document$1, name);
+        if (is2)
+          element.setAttribute("is", is2);
+        return element;
+      };
+      customElements.get = getCE;
+      customElements.whenDefined = _whenDefined2;
+      customElements.upgrade = function(element) {
+        var is2 = element.getAttribute("is");
+        if (is2) {
+          var _constructor = _registry.get(is2);
+          if (_constructor) {
+            _augment(setPrototypeOf(element, _constructor.prototype), is2);
+            return;
+          }
+        }
+        upgrade.call(customElements, element);
+      };
+      customElements.define = function(is2, Class, options) {
+        if (getCE(is2))
+          throw new Error2("'".concat(is2, "' has already been defined as a custom element"));
+        var selector;
+        var tag = options && options["extends"];
+        _classes.set(Class, tag ? {
+          is: is2,
+          tag
+        } : {
+          is: "",
+          tag: is2
+        });
+        if (tag) {
+          selector = "".concat(tag, '[is="').concat(is2, '"]');
+          _prototypes.set(selector, Class.prototype);
+          _registry.set(is2, Class);
+          _query.push(selector);
+        } else {
+          define.apply(customElements, arguments);
+          shadowed.push(selector = is2);
+        }
+        _whenDefined2(is2).then(function() {
           if (tag) {
-            selector = "".concat(tag, '[is="').concat(is2, '"]');
-            _prototypes.set(selector, Class.prototype);
-            _registry.set(is2, Class);
-            _query.push(selector);
-          } else {
-            define.apply(customElements, arguments);
-            shadowed.push(selector = is2);
-          }
-          _whenDefined2(is2).then(function() {
-            if (tag) {
-              _parse(document$1.querySelectorAll(selector));
-              shadows.forEach(parseShadow, [selector]);
-            } else
-              parseShadowed(document$1.querySelectorAll(selector));
-          });
-          _defined.get(is2)._(Class);
-        }
-      });
+            _parse(document$1.querySelectorAll(selector));
+            shadows.forEach(_parseShadow, [selector]);
+          } else
+            parseShadowed(document$1.querySelectorAll(selector));
+        });
+        _defined.get(is2)._(Class);
+      };
     }
   })();
 
@@ -1992,7 +2060,7 @@
         wasTouch = false;
         return;
       }
-      var eventsArr = [], now2 = getTimestamp(), deltaY = cachedY - currY, deltaX = cachedX - currX;
+      var eventsArr = [], now = getTimestamp(), deltaY = cachedY - currY, deltaX = cachedX - currX;
       clearTimeout(dblTapTimer);
       clearTimeout(longtapTimer);
       if (deltaX <= -defaults.swipeThreshold)
@@ -2016,7 +2084,7 @@
         tapNum = 0;
       } else {
         if (cachedX >= currX - defaults.tapPrecision && cachedX <= currX + defaults.tapPrecision && cachedY >= currY - defaults.tapPrecision && cachedY <= currY + defaults.tapPrecision) {
-          if (timestamp + defaults.tapThreshold - now2 >= 0) {
+          if (timestamp + defaults.tapThreshold - now >= 0) {
             sendEvent(e.target, tapNum >= 2 && target === e.target ? "dbltap" : "tap", e);
             target = e.target;
           }
@@ -2046,49 +2114,66 @@
   })(document, window);
 
   // node_modules/instant.page/instantpage.js
-  var mouseoverTimer;
-  var lastTouchTimestamp;
-  var prefetches = new Set();
-  var prefetchElement = document.createElement("link");
-  var isSupported = prefetchElement.relList && prefetchElement.relList.supports && prefetchElement.relList.supports("prefetch") && window.IntersectionObserver && "isIntersecting" in IntersectionObserverEntry.prototype;
-  var allowQueryString = "instantAllowQueryString" in document.body.dataset;
-  var allowExternalLinks = "instantAllowExternalLinks" in document.body.dataset;
-  var useWhitelist = "instantWhitelist" in document.body.dataset;
-  var mousedownShortcut = "instantMousedownShortcut" in document.body.dataset;
+  var _chromiumMajorVersionInUserAgent = null;
+  var _allowQueryString;
+  var _allowExternalLinks;
+  var _useWhitelist;
+  var _delayOnHover = 65;
+  var _lastTouchTimestamp;
+  var _mouseoverTimer;
+  var _preloadedList = new Set();
   var DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION = 1111;
-  var delayOnHover = 65;
-  var useMousedown = false;
-  var useMousedownOnly = false;
-  var useViewport = false;
-  if ("instantIntensity" in document.body.dataset) {
-    const intensity = document.body.dataset.instantIntensity;
-    if (intensity.substr(0, "mousedown".length) == "mousedown") {
-      useMousedown = true;
-      if (intensity == "mousedown-only") {
-        useMousedownOnly = true;
-      }
-    } else if (intensity.substr(0, "viewport".length) == "viewport") {
-      if (!(navigator.connection && (navigator.connection.saveData || navigator.connection.effectiveType && navigator.connection.effectiveType.includes("2g")))) {
-        if (intensity == "viewport") {
-          if (document.documentElement.clientWidth * document.documentElement.clientHeight < 45e4) {
-            useViewport = true;
-          }
-        } else if (intensity == "viewport-all") {
-          useViewport = true;
-        }
-      }
-    } else {
-      const milliseconds = parseInt(intensity);
-      if (!isNaN(milliseconds)) {
-        delayOnHover = milliseconds;
-      }
+  init();
+  function init() {
+    const isSupported = document.createElement("link").relList.supports("prefetch");
+    if (!isSupported) {
+      return;
     }
-  }
-  if (isSupported) {
+    const handleVaryAcceptHeader = "instantVaryAccept" in document.body.dataset || "Shopify" in window;
+    const chromiumUserAgentIndex = navigator.userAgent.indexOf("Chrome/");
+    if (chromiumUserAgentIndex > -1) {
+      _chromiumMajorVersionInUserAgent = parseInt(navigator.userAgent.substring(chromiumUserAgentIndex + "Chrome/".length));
+    }
+    if (handleVaryAcceptHeader && _chromiumMajorVersionInUserAgent && _chromiumMajorVersionInUserAgent < 110) {
+      return;
+    }
+    const mousedownShortcut = "instantMousedownShortcut" in document.body.dataset;
+    _allowQueryString = "instantAllowQueryString" in document.body.dataset;
+    _allowExternalLinks = "instantAllowExternalLinks" in document.body.dataset;
+    _useWhitelist = "instantWhitelist" in document.body.dataset;
     const eventListenersOptions = {
       capture: true,
       passive: true
     };
+    let useMousedown = false;
+    let useMousedownOnly = false;
+    let useViewport = false;
+    if ("instantIntensity" in document.body.dataset) {
+      const intensity = document.body.dataset.instantIntensity;
+      if (intensity.startsWith("mousedown")) {
+        useMousedown = true;
+        if (intensity == "mousedown-only") {
+          useMousedownOnly = true;
+        }
+      } else if (intensity.startsWith("viewport")) {
+        const isNavigatorConnectionSaveDataEnabled = navigator.connection && navigator.connection.saveData;
+        const isNavigatorConnectionLike2g = navigator.connection && navigator.connection.effectiveType && navigator.connection.effectiveType.includes("2g");
+        if (!isNavigatorConnectionSaveDataEnabled && !isNavigatorConnectionLike2g) {
+          if (intensity == "viewport") {
+            if (document.documentElement.clientWidth * document.documentElement.clientHeight < 45e4) {
+              useViewport = true;
+            }
+          } else if (intensity == "viewport-all") {
+            useViewport = true;
+          }
+        }
+      } else {
+        const milliseconds = parseInt(intensity);
+        if (!isNaN(milliseconds)) {
+          _delayOnHover = milliseconds;
+        }
+      }
+    }
     if (!useMousedownOnly) {
       document.addEventListener("touchstart", touchstartListener, eventListenersOptions);
     }
@@ -2101,552 +2186,136 @@
       document.addEventListener("mousedown", mousedownShortcutListener, eventListenersOptions);
     }
     if (useViewport) {
-      let triggeringFunction;
-      if (window.requestIdleCallback) {
-        triggeringFunction = (callback) => {
-          requestIdleCallback(callback, {
-            timeout: 1500
-          });
-        };
-      } else {
-        triggeringFunction = (callback) => {
+      let requestIdleCallbackOrFallback = window.requestIdleCallback;
+      if (!requestIdleCallbackOrFallback) {
+        requestIdleCallbackOrFallback = (callback) => {
           callback();
         };
       }
-      triggeringFunction(() => {
+      requestIdleCallbackOrFallback(function observeIntersection() {
         const intersectionObserver = new IntersectionObserver((entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
-              const linkElement = entry.target;
-              intersectionObserver.unobserve(linkElement);
-              preload(linkElement.href);
+              const anchorElement = entry.target;
+              intersectionObserver.unobserve(anchorElement);
+              preload(anchorElement.href);
             }
           });
         });
-        document.querySelectorAll("a").forEach((linkElement) => {
-          if (isPreloadable(linkElement)) {
-            intersectionObserver.observe(linkElement);
+        document.querySelectorAll("a").forEach((anchorElement) => {
+          if (isPreloadable(anchorElement)) {
+            intersectionObserver.observe(anchorElement);
           }
         });
+      }, {
+        timeout: 1500
       });
     }
   }
   function touchstartListener(event) {
-    lastTouchTimestamp = performance.now();
-    const linkElement = event.target.closest("a");
-    if (!isPreloadable(linkElement)) {
+    _lastTouchTimestamp = performance.now();
+    const anchorElement = event.target.closest("a");
+    if (!isPreloadable(anchorElement)) {
       return;
     }
-    preload(linkElement.href);
+    preload(anchorElement.href, "high");
   }
   function mouseoverListener(event) {
-    if (performance.now() - lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) {
+    if (performance.now() - _lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) {
       return;
     }
-    const linkElement = event.target.closest("a");
-    if (!isPreloadable(linkElement)) {
+    if (!("closest" in event.target)) {
       return;
     }
-    linkElement.addEventListener("mouseout", mouseoutListener, { passive: true });
-    mouseoverTimer = setTimeout(() => {
-      preload(linkElement.href);
-      mouseoverTimer = void 0;
-    }, delayOnHover);
+    const anchorElement = event.target.closest("a");
+    if (!isPreloadable(anchorElement)) {
+      return;
+    }
+    anchorElement.addEventListener("mouseout", mouseoutListener, { passive: true });
+    _mouseoverTimer = setTimeout(() => {
+      preload(anchorElement.href, "high");
+      _mouseoverTimer = void 0;
+    }, _delayOnHover);
   }
   function mousedownListener(event) {
-    const linkElement = event.target.closest("a");
-    if (!isPreloadable(linkElement)) {
+    const anchorElement = event.target.closest("a");
+    if (!isPreloadable(anchorElement)) {
       return;
     }
-    preload(linkElement.href);
+    preload(anchorElement.href, "high");
   }
   function mouseoutListener(event) {
     if (event.relatedTarget && event.target.closest("a") == event.relatedTarget.closest("a")) {
       return;
     }
-    if (mouseoverTimer) {
-      clearTimeout(mouseoverTimer);
-      mouseoverTimer = void 0;
+    if (_mouseoverTimer) {
+      clearTimeout(_mouseoverTimer);
+      _mouseoverTimer = void 0;
     }
   }
   function mousedownShortcutListener(event) {
-    if (performance.now() - lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) {
+    if (performance.now() - _lastTouchTimestamp < DELAY_TO_NOT_BE_CONSIDERED_A_TOUCH_INITIATED_ACTION) {
       return;
     }
-    const linkElement = event.target.closest("a");
+    const anchorElement = event.target.closest("a");
     if (event.which > 1 || event.metaKey || event.ctrlKey) {
       return;
     }
-    if (!linkElement) {
+    if (!anchorElement) {
       return;
     }
-    linkElement.addEventListener("click", function(event2) {
+    anchorElement.addEventListener("click", function(event2) {
       if (event2.detail == 1337) {
         return;
       }
       event2.preventDefault();
     }, { capture: true, passive: false, once: true });
     const customEvent = new MouseEvent("click", { view: window, bubbles: true, cancelable: false, detail: 1337 });
-    linkElement.dispatchEvent(customEvent);
+    anchorElement.dispatchEvent(customEvent);
   }
-  function isPreloadable(linkElement) {
-    if (!linkElement || !linkElement.href) {
+  function isPreloadable(anchorElement) {
+    if (!anchorElement || !anchorElement.href) {
       return;
     }
-    if (useWhitelist && !("instant" in linkElement.dataset)) {
+    if (_useWhitelist && !("instant" in anchorElement.dataset)) {
       return;
     }
-    if (!allowExternalLinks && linkElement.origin != location.origin && !("instant" in linkElement.dataset)) {
+    if (anchorElement.origin != location.origin) {
+      let allowed = _allowExternalLinks || "instant" in anchorElement.dataset;
+      if (!allowed || !_chromiumMajorVersionInUserAgent) {
+        return;
+      }
+    }
+    if (!["http:", "https:"].includes(anchorElement.protocol)) {
       return;
     }
-    if (!["http:", "https:"].includes(linkElement.protocol)) {
+    if (anchorElement.protocol == "http:" && location.protocol == "https:") {
       return;
     }
-    if (linkElement.protocol == "http:" && location.protocol == "https:") {
+    if (!_allowQueryString && anchorElement.search && !("instant" in anchorElement.dataset)) {
       return;
     }
-    if (!allowQueryString && linkElement.search && !("instant" in linkElement.dataset)) {
+    if (anchorElement.hash && anchorElement.pathname + anchorElement.search == location.pathname + location.search) {
       return;
     }
-    if (linkElement.hash && linkElement.pathname + linkElement.search == location.pathname + location.search) {
-      return;
-    }
-    if ("noInstant" in linkElement.dataset) {
+    if ("noInstant" in anchorElement.dataset) {
       return;
     }
     return true;
   }
-  function preload(url) {
-    if (prefetches.has(url)) {
+  function preload(url, fetchPriority = "auto") {
+    if (_preloadedList.has(url)) {
       return;
     }
-    const prefetcher = document.createElement("link");
-    prefetcher.rel = "prefetch";
-    prefetcher.href = url;
-    document.head.appendChild(prefetcher);
-    prefetches.add(url);
+    const linkElement = document.createElement("link");
+    linkElement.rel = "prefetch";
+    linkElement.href = url;
+    linkElement.fetchPriority = fetchPriority;
+    linkElement.as = "document";
+    document.head.appendChild(linkElement);
+    _preloadedList.add(url);
   }
-
-  // node_modules/seamless-scroll-polyfill/lib/common.js
-  var checkBehavior = (behavior) => {
-    return behavior === void 0 || behavior === "auto" || behavior === "instant" || behavior === "smooth";
-  };
-  function elementScrollXY(x, y) {
-    this.scrollLeft = x;
-    this.scrollTop = y;
-  }
-  var failedExecute = (method, object, reason = "cannot convert to dictionary.") => `Failed to execute '${method}' on '${object}': ${reason}`;
-  var failedExecuteInvalidEnumValue = (method, object, value) => failedExecute(method, object, `The provided value '${value}' is not a valid enum value of type ScrollBehavior.`);
-  var backupMethod = (proto, method, fallback) => {
-    var _a;
-    const backup = `__SEAMLESS.BACKUP$${method}`;
-    if (!proto[backup] && proto[method] && !((_a = proto[method]) == null ? void 0 : _a.__isPolyfill)) {
-      proto[backup] = proto[method];
-    }
-    return proto[backup] || fallback;
-  };
-  var isObject = (value) => {
-    const type = typeof value;
-    return value !== null && (type === "object" || type === "function");
-  };
-  var isScrollBehaviorSupported = () => "scrollBehavior" in window.document.documentElement.style;
-  var markPolyfill = (method) => {
-    Object.defineProperty(method, "__isPolyfill", { value: true });
-  };
-  var modifyPrototypes = (prop, func) => {
-    markPolyfill(func);
-    [HTMLElement.prototype, SVGElement.prototype, Element.prototype].forEach((prototype) => {
-      backupMethod(prototype, prop);
-      prototype[prop] = func;
-    });
-  };
-  var scrollingElement = (element) => element.ownerDocument.scrollingElement || element.ownerDocument.documentElement;
-
-  // node_modules/seamless-scroll-polyfill/lib/scroll-step.js
-  var ease = (k) => {
-    return 0.5 * (1 - Math.cos(Math.PI * k));
-  };
-  var now = () => {
-    var _a, _b, _c;
-    return (_c = (_b = (_a = window.performance) == null ? void 0 : _a.now) == null ? void 0 : _b.call(_a)) != null ? _c : window.Date.now();
-  };
-  var DURATION = 500;
-  var step = (context) => {
-    const currentTime = now();
-    const elapsed = (currentTime - context.timeStamp) / (context.duration || DURATION);
-    if (elapsed > 1) {
-      context.method(context.targetX, context.targetY);
-      context.callback();
-      return;
-    }
-    const value = (context.timingFunc || ease)(elapsed);
-    const currentX = context.startX + (context.targetX - context.startX) * value;
-    const currentY = context.startY + (context.targetY - context.startY) * value;
-    context.method(currentX, currentY);
-    context.rafId = window.requestAnimationFrame(() => {
-      step(context);
-    });
-  };
-
-  // node_modules/seamless-scroll-polyfill/lib/scroll.js
-  var nonFinite = (value) => {
-    if (!isFinite(value)) {
-      return 0;
-    }
-    return Number(value);
-  };
-  var isConnected = (node) => {
-    var _a;
-    return (_a = node.isConnected) != null ? _a : !node.ownerDocument || !(node.ownerDocument.compareDocumentPosition(node) & 1);
-  };
-  var scrollWithOptions = (element, options, config) => {
-    var _a, _b;
-    if (!isConnected(element)) {
-      return;
-    }
-    const startX = element.scrollLeft;
-    const startY = element.scrollTop;
-    const targetX = nonFinite((_a = options.left) != null ? _a : startX);
-    const targetY = nonFinite((_b = options.top) != null ? _b : startY);
-    if (targetX === startX && targetY === startY) {
-      return;
-    }
-    const fallback = backupMethod(HTMLElement.prototype, "scroll", elementScrollXY);
-    const method = backupMethod(Object.getPrototypeOf(element), "scroll", fallback).bind(element);
-    if (options.behavior !== "smooth") {
-      method(targetX, targetY);
-      return;
-    }
-    const removeEventListener = () => {
-      window.removeEventListener("wheel", cancelScroll);
-      window.removeEventListener("touchmove", cancelScroll);
-    };
-    const context = {
-      ...config,
-      timeStamp: now(),
-      startX,
-      startY,
-      targetX,
-      targetY,
-      rafId: 0,
-      method,
-      callback: removeEventListener
-    };
-    const cancelScroll = () => {
-      window.cancelAnimationFrame(context.rafId);
-      removeEventListener();
-    };
-    window.addEventListener("wheel", cancelScroll, {
-      passive: true,
-      once: true
-    });
-    window.addEventListener("touchmove", cancelScroll, {
-      passive: true,
-      once: true
-    });
-    step(context);
-  };
-  var isWindow = (obj) => obj.window === obj;
-  var createScroll = (scrollName) => (target, scrollOptions, config) => {
-    const [element, scrollType] = isWindow(target) ? [scrollingElement(target.document.documentElement), "Window"] : [target, "Element"];
-    const options = scrollOptions != null ? scrollOptions : {};
-    if (!isObject(options)) {
-      throw new TypeError(failedExecute(scrollName, scrollType));
-    }
-    if (!checkBehavior(options.behavior)) {
-      throw new TypeError(failedExecuteInvalidEnumValue(scrollName, scrollType, options.behavior));
-    }
-    if (scrollName === "scrollBy") {
-      options.left = nonFinite(options.left) + element.scrollLeft;
-      options.top = nonFinite(options.top) + element.scrollTop;
-    }
-    scrollWithOptions(element, options, config);
-  };
-  var scroll = createScroll("scroll");
-  var scrollTo = createScroll("scrollTo");
-  var scrollBy = createScroll("scrollBy");
-  var elementScroll = scroll;
-
-  // node_modules/seamless-scroll-polyfill/lib/scrollIntoView.js
-  var normalizeWritingMode = (writingMode) => {
-    switch (writingMode) {
-      case "horizontal-tb":
-      case "lr":
-      case "lr-tb":
-      case "rl":
-      case "rl-tb":
-        return 0;
-      case "vertical-rl":
-      case "tb":
-      case "tb-rl":
-        return 1;
-      case "vertical-lr":
-      case "tb-lr":
-        return 2;
-      case "sideways-rl":
-        return 3;
-      case "sideways-lr":
-        return 4;
-    }
-    return 0;
-  };
-  var calcPhysicalAxis = (writingMode, isLTR, hPos, vPos) => {
-    let layout = 0;
-    if (!isLTR) {
-      layout ^= 2;
-    }
-    switch (writingMode) {
-      case 0:
-        layout = layout >> 1 | (layout & 1) << 1;
-        [hPos, vPos] = [vPos, hPos];
-        break;
-      case 1:
-      case 3:
-        layout ^= 1;
-        break;
-      case 4:
-        layout ^= 2;
-        break;
-    }
-    return [layout, hPos, vPos];
-  };
-  var isXReversed = (computedStyle) => {
-    const layout = calcPhysicalAxis(normalizeWritingMode(computedStyle.writingMode), computedStyle.direction !== "rtl", void 0, void 0)[0];
-    return (layout & 1) === 1;
-  };
-  var toPhysicalAlignment = (options, writingMode, isLTR) => {
-    const [layout, hPos, vPos] = calcPhysicalAxis(writingMode, isLTR, options.block || "start", options.inline || "nearest");
-    return [hPos, vPos].map((value, index) => {
-      switch (value) {
-        case "center":
-          return 1;
-        case "nearest":
-          return 0;
-        default: {
-          const reverse = layout >> index & 1;
-          return value === "start" === !reverse ? 2 : 3;
-        }
-      }
-    });
-  };
-  var mapNearest = (align, scrollingEdgeStart, scrollingEdgeEnd, scrollingSize, elementEdgeStart, elementEdgeEnd, elementSize) => {
-    if (align !== 0) {
-      return align;
-    }
-    if (elementEdgeStart < scrollingEdgeStart && elementEdgeEnd > scrollingEdgeEnd || elementEdgeStart > scrollingEdgeStart && elementEdgeEnd < scrollingEdgeEnd) {
-      return null;
-    }
-    if (elementEdgeStart <= scrollingEdgeStart && elementSize <= scrollingSize || elementEdgeEnd >= scrollingEdgeEnd && elementSize >= scrollingSize) {
-      return 2;
-    }
-    if (elementEdgeEnd > scrollingEdgeEnd && elementSize < scrollingSize || elementEdgeStart < scrollingEdgeStart && elementSize > scrollingSize) {
-      return 3;
-    }
-    return null;
-  };
-  var canOverflow = (overflow) => {
-    return overflow !== "visible" && overflow !== "clip";
-  };
-  var getFrameElement = (element) => {
-    var _a;
-    try {
-      return ((_a = element.ownerDocument.defaultView) == null ? void 0 : _a.frameElement) || null;
-    } catch {
-      return null;
-    }
-  };
-  var isScrollable = (element, computedStyle) => {
-    if (element.clientHeight < element.scrollHeight || element.clientWidth < element.scrollWidth) {
-      return canOverflow(computedStyle.overflowY) || canOverflow(computedStyle.overflowX) || element === scrollingElement(element);
-    }
-    return false;
-  };
-  var parentElement = (element) => {
-    const pNode = element.parentNode;
-    const pElement = element.parentElement;
-    if (pElement === null && pNode !== null) {
-      if (pNode.nodeType === 11) {
-        return pNode.host;
-      }
-      if (pNode.nodeType === 9) {
-        return getFrameElement(element);
-      }
-    }
-    return pElement;
-  };
-  var clamp = (value, min, max) => {
-    if (value < min) {
-      return min;
-    }
-    if (value > max) {
-      return max;
-    }
-    return value;
-  };
-  var getSupportedScrollMarginProperty = (ownerDocument) => {
-    return ["scroll-margin", "scroll-snap-margin"].filter((property) => property in ownerDocument.documentElement.style)[0];
-  };
-  var getElementScrollSnapArea = (element, elementRect, computedStyle) => {
-    const { top, right, bottom, left } = elementRect;
-    const scrollProperty = getSupportedScrollMarginProperty(element.ownerDocument);
-    if (!scrollProperty) {
-      return [top, right, bottom, left];
-    }
-    const scrollMarginValue = (edge) => {
-      const value = computedStyle.getPropertyValue(`${scrollProperty}-${edge}`);
-      return parseInt(value, 10) || 0;
-    };
-    return [
-      top - scrollMarginValue("top"),
-      right + scrollMarginValue("right"),
-      bottom + scrollMarginValue("bottom"),
-      left - scrollMarginValue("left")
-    ];
-  };
-  var calcAlignEdge = (align, start, end) => {
-    switch (align) {
-      case 1:
-        return (start + end) / 2;
-      case 3:
-        return end;
-      case 2:
-      case 0:
-        return start;
-    }
-  };
-  var getFrameViewport = (frame, frameRect) => {
-    var _a, _b, _c;
-    const visualViewport = (_a = frame.ownerDocument.defaultView) == null ? void 0 : _a.visualViewport;
-    const [x, y, width, height] = frame === scrollingElement(frame) ? [0, 0, (_b = visualViewport == null ? void 0 : visualViewport.width) != null ? _b : frame.clientWidth, (_c = visualViewport == null ? void 0 : visualViewport.height) != null ? _c : frame.clientHeight] : [frameRect.left, frameRect.top, frame.clientWidth, frame.clientHeight];
-    const left = x + frame.clientLeft;
-    const top = y + frame.clientTop;
-    const right = left + width;
-    const bottom = top + height;
-    return [top, right, bottom, left];
-  };
-  var computeScrollIntoView = (element, options) => {
-    const actions = [];
-    let ownerDocument = element.ownerDocument;
-    let ownerWindow = ownerDocument.defaultView;
-    if (!ownerWindow) {
-      return actions;
-    }
-    const computedStyle = window.getComputedStyle(element);
-    const isLTR = computedStyle.direction !== "rtl";
-    const writingMode = normalizeWritingMode(computedStyle.writingMode || computedStyle.getPropertyValue("-webkit-writing-mode") || computedStyle.getPropertyValue("-ms-writing-mode"));
-    const [alignH, alignV] = toPhysicalAlignment(options, writingMode, isLTR);
-    let [top, right, bottom, left] = getElementScrollSnapArea(element, element.getBoundingClientRect(), computedStyle);
-    for (let frame = parentElement(element); frame !== null; frame = parentElement(frame)) {
-      if (ownerDocument !== frame.ownerDocument) {
-        ownerDocument = frame.ownerDocument;
-        ownerWindow = ownerDocument.defaultView;
-        if (!ownerWindow) {
-          break;
-        }
-        const { left: dX, top: dY } = frame.getBoundingClientRect();
-        top += dY;
-        right += dX;
-        bottom += dY;
-        left += dX;
-      }
-      const frameStyle = ownerWindow.getComputedStyle(frame);
-      if (frameStyle.position === "fixed") {
-        break;
-      }
-      if (!isScrollable(frame, frameStyle)) {
-        continue;
-      }
-      const frameRect = frame.getBoundingClientRect();
-      const [frameTop, frameRight, frameBottom, frameLeft] = getFrameViewport(frame, frameRect);
-      const eAlignH = mapNearest(alignH, frameLeft, frameRight, frame.clientWidth, left, right, right - left);
-      const eAlignV = mapNearest(alignV, frameTop, frameBottom, frame.clientHeight, top, bottom, bottom - top);
-      const diffX = eAlignH === null ? 0 : calcAlignEdge(eAlignH, left, right) - calcAlignEdge(eAlignH, frameLeft, frameRight);
-      const diffY = eAlignV === null ? 0 : calcAlignEdge(eAlignV, top, bottom) - calcAlignEdge(eAlignV, frameTop, frameBottom);
-      const moveX = isXReversed(frameStyle) ? clamp(diffX, -frame.scrollWidth + frame.clientWidth - frame.scrollLeft, -frame.scrollLeft) : clamp(diffX, -frame.scrollLeft, frame.scrollWidth - frame.clientWidth - frame.scrollLeft);
-      const moveY = clamp(diffY, -frame.scrollTop, frame.scrollHeight - frame.clientHeight - frame.scrollTop);
-      actions.push([
-        frame,
-        { left: frame.scrollLeft + moveX, top: frame.scrollTop + moveY, behavior: options.behavior }
-      ]);
-      top = Math.max(top - moveY, frameTop);
-      right = Math.min(right - moveX, frameRight);
-      bottom = Math.min(bottom - moveY, frameBottom);
-      left = Math.max(left - moveX, frameLeft);
-    }
-    return actions;
-  };
-  var scrollIntoView = (element, scrollIntoViewOptions, config) => {
-    const options = scrollIntoViewOptions || {};
-    if (!checkBehavior(options.behavior)) {
-      throw new TypeError(failedExecuteInvalidEnumValue("scrollIntoView", "Element", options.behavior));
-    }
-    const actions = computeScrollIntoView(element, options);
-    actions.forEach(([frame, scrollToOptions]) => {
-      elementScroll(frame, scrollToOptions, config);
-    });
-  };
-  var elementScrollIntoView = scrollIntoView;
-
-  // node_modules/seamless-scroll-polyfill/lib/scroll.polyfill.js
-  var createPolyfill = (scrollName, patch) => (config) => {
-    if (isScrollBehaviorSupported()) {
-      return;
-    }
-    const scrollMethod = {
-      scroll,
-      scrollTo,
-      scrollBy
-    }[scrollName];
-    patch(scrollName, function() {
-      const args = arguments;
-      if (arguments.length === 1) {
-        scrollMethod(this, args[0], config);
-        return;
-      }
-      const left = args[0];
-      const top = args[1];
-      scrollMethod(this, { left, top });
-    });
-  };
-  var elementScrollPolyfill = createPolyfill("scroll", modifyPrototypes);
-  var elementScrollToPolyfill = createPolyfill("scrollTo", modifyPrototypes);
-  var elementScrollByPolyfill = createPolyfill("scrollBy", modifyPrototypes);
-  var modifyWindow = (prop, func) => {
-    markPolyfill(func);
-    backupMethod(window, prop);
-    window[prop] = func;
-  };
-  var windowScrollPolyfill = createPolyfill("scroll", modifyWindow);
-  var windowScrollToPolyfill = createPolyfill("scrollTo", modifyWindow);
-  var windowScrollByPolyfill = createPolyfill("scrollBy", modifyWindow);
-
-  // node_modules/seamless-scroll-polyfill/lib/scrollIntoView.polyfill.js
-  function elementScrollIntoViewBoolean(alignToTop) {
-    elementScrollIntoView(this, {
-      block: (alignToTop != null ? alignToTop : true) ? "start" : "end",
-      inline: "nearest"
-    });
-  }
-  var elementScrollIntoViewPolyfill = (config) => {
-    if (isScrollBehaviorSupported()) {
-      return;
-    }
-    const originalFunc = backupMethod(window.HTMLElement.prototype, "scrollIntoView", elementScrollIntoViewBoolean);
-    modifyPrototypes("scrollIntoView", function scrollIntoView2() {
-      const args = arguments;
-      const options = args[0];
-      if (args.length === 1 && isObject(options)) {
-        elementScrollIntoView(this, options, config);
-        return;
-      }
-      originalFunc.apply(this, args);
-    });
-  };
-
-  // js/vendor.js
-  elementScrollIntoViewPolyfill();
-  elementScrollToPolyfill();
-  elementScrollByPolyfill();
 })();
+/*! (c) Andrea Giammarchi - ISC */
 /*! (c) Andrea Giammarchi @webreflection ISC */
-/*! instant.page v5.1.0 - (C) 2019-2020 Alexandre Dieulot - https://instant.page/license */
+/*! instant.page v5.2.0 - (C) 2019-2023 Alexandre Dieulot - https://instant.page/license */
