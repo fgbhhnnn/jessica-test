@@ -26,7 +26,7 @@
     "currency_code_enabled": false,
     "stagger_products_apparition": true,
     "round_color_swatches": false,
-    "color_swatch_config": "yellow:#000\ngiallo:#000",
+    "color_swatch_config": "yellow:#000",
     "show_vendor": false,
     "show_secondary_image": true,
     "show_product_rating": false,
